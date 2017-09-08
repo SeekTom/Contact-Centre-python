@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ACME Agent UI</title>
+    <script type="text/javascript" src="//media.twiliocdn.com/sdk/js/client/v1.4/twilio.min.js"></script>
+      <script type="text/javascript" src="//media.twiliocdn.com/taskrouter/js/v1.10/taskrouter.min.js"></script>
+
+    <script type="text/javascript"
+      src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js">
+    </script>
+   <!-- <link href="https://static0.twilio.com/resources/quickstart/client.css"
+      type="text/css" rel="stylesheet" /> -->
+        <link type="text/css"  rel="stylesheet" href="//media.twiliocdn.com/taskrouter/quickstart/agent.css"/>
+
+
+       <script type="text/javascript">
+
+      Twilio.Device.setup("{{ token }}", {debug: true});
+
+      Twilio.Device.ready(function (device) {
+        console.log("Client '{{ client_name }}' is ready");
+      });
+
+      Twilio.Device.error(function (error) {
+        $("#logger").text("Error: " + error.message);
+      });
+
+      Twilio.Device.connect(function (conn) {
+        $("#logger").text("Successfully established call");
+      });
+
+      Twilio.Device.disconnect(function (conn) {
+        $("#logger").text("Call ended");
+      });
+
+      Twilio.Device.incoming(function (conn) {
+        //$("#logger").text("Incoming connection from " + conn.parameters.From);
+        // accept the incoming connection and start two-way audio
+        conn.accept();
+      });
+
+
+
+      function call() {
+        // get the phone number or client to connect the call to
+        params = {"PhoneNumber": $("#number").val()};
+        Twilio.Device.connect(params);
+      }
+
+      function hangup() {
+        Twilio.Device.disconnectAll();
+      }
+
+    </script>
+
+      <script type="text/javascript">
+        /* Subscribe to a subset of the available TaskRouter.js events for a worker */
+        var ReservationObject;
+
+        function registerTaskRouterCallbacks() {
+            worker.on('ready', function (worker) {
+                agentActivityChanged(worker.activityName);
+                logger("Successfully registered as: " + worker.friendlyName);
+                logger("Current activity is: " + worker.activityName);
+                
+            });
+
+            worker.on('activity.update', function (worker) {
+                agentActivityChanged(worker.activityName);
+
+
+                logger("Worker activity changed to: " + worker.activityName);
+                var workerStatus = worker.activityName;
+
+                if (workerStatus == "Offline"){
+                    if (Twilio.Device.status() == 'busy') //Worker has been set to offline during a call, as app has received a participant-leave event for the inbound customer call
+                    {
+                        hangup(); //tear down the agent call
+                    }
+                }else
+                {
+                    console.log('worker is not offline, its state is: ' + workerStatus);
+                }
+            });
+
+            worker.on("reservation.created", function (reservation) {
+                logger("-----");
+                logger("You have been reserved to handle a call!");
+                logger("Call from: " + reservation.task.attributes.from);
+                logger("Selected language: " + reservation.task.attributes.selected_language);
+                logger("-----");
+                logger(reservation.sid);
+                console.log(reservation.sid);
+                ReservationObject = reservation;
+
+
+            });
+
+            worker.on("reservation.accepted", function (reservation) {
+                logger("Reservation " + reservation.sid + " accepted!");
+            });
+
+            worker.on("reservation.rejected", function (reservation) {
+                logger("Reservation " + reservation.sid + " rejected!");
+            });
+
+            worker.on("reservation.timeout", function (reservation) {
+                logger("Reservation " + reservation.sid + " timed out!");
+            });
+
+            worker.on("reservation.canceled", function (reservation) {
+                logger("Reservation " + reservation.sid + " canceled!");
+            });
+        }
+
+        /* Hook up the agent Activity buttons to TaskRouter.js */
+
+        function bindAgentActivityButtons() {
+            // Fetch the full list of available Activities from TaskRouter. Store each
+            // ActivitySid against the matching Friendly Name
+            var activitySids = {};
+            worker.activities.fetch(function (error, activityList) {
+                var activities = activityList.data;
+                var i = activities.length;
+                while (i--) {
+                    activitySids[activities[i].friendlyName] = activities[i].sid;
+                }
+            });
+
+            /* For each button of class 'change-activity' in our Agent UI, look up the
+             ActivitySid corresponding to the Friendly Name in the button’s next-activity
+             data attribute. Use Worker.js to transition the agent to that ActivitySid
+             when the button is clicked.*/
+            var elements = document.getElementsByClassName('change-activity');
+            var i = elements.length;
+            while (i--) {
+                elements[i].onclick = function () {
+                    var nextActivity = this.dataset.nextActivity;
+                    var nextActivitySid = activitySids[nextActivity];
+                    worker.updateActivity(nextActivitySid);
+
+
+
+                   // console.log('from event change:' + ReservationObject.sid);
+
+                }
+            }
+        }
+
+        /* Update the UI to reflect a change in Activity */
+
+        function agentActivityChanged(activity) {
+            hideAgentActivities();
+            showAgentActivity(activity);
+
+
+        }
+
+        function hideAgentActivities() {
+            var elements = document.getElementsByClassName('agent-activity');
+            var i = elements.length;
+            while (i--) {
+                elements[i].style.display = 'none';
+            }
+        }
+
+        function showAgentActivity(activity) {
+            activity = activity.toLowerCase();
+            var elements = document.getElementsByClassName(('agent-activity ' + activity));
+            elements.item(0).style.display = 'block';
+        }
+
+        function acceptReservation() {
+
+            var options = {
+
+                "From" : "+441273934716",
+                "PostWorkActivitySid" :  "WA20c6530534f9ef1361747282aa2158d0",
+                "Timeout" : "30",
+                "Record":"true",
+                "RecordingCallbackUrl": "https://requestb.in/t5k2lut5",
+                "ConferenceStatusCallback": "https://f7f0b077.ngrok.io/conference_callback",
+                "ConferenceStatusCallbackEvent": "start,end,join,leave",
+                "EndConferenceOnExit": "true"
+            };
+
+            ReservationObject.conference(null, null, null, null, null, options,
+
+                function (error, reservation) {
+                    if (error) {
+                        console.log(error.code);
+                        console.log(error.message);
+                        return;
+                    }
+                    console.log("conference initiated");
+                }
+           )
+        }
+
+        function logger(message) {
+            var log = document.getElementById('log');
+            log.value += "\n> " + message;
+            log.scrollTop = log.scrollHeight;
+        }
+
+
+        window.onload = function () {
+            // Initialize TaskRouter.js on page load using window.workerToken -
+            // a Twilio Capability token that was set from rendering the template with agents endpoint
+            logger("Initializing...");
+            window.worker = new Twilio.TaskRouter.Worker("{{ worker_token| safe }}");
+
+
+            registerTaskRouterCallbacks();
+            bindAgentActivityButtons();
+        };
+    </script>
+  </head>
+  <body>
+  <div class="content">
+      <h2>ACME agent desktop</h2>
+    <section class="agent-activity offline">
+        <p class="activity">Offline</p>
+        <button class="change-activity" data-next-activity="Idle">Go Available</button>
+    </section>
+    <section class="agent-activity idle">
+        <p class="activity"><span>Available</span></p>
+        <button class="change-activity" data-next-activity="Offline">Go Offline</button>
+    </section>
+    <section class="agent-activity reserved">
+        <p class="activity">Reserved</p>
+    </section>
+    <section class="agent-activity busy">
+        <p class="activity">Busy</p>
+    </section>
+    <section class="agent-activity wrapup">
+        <p class="activity">Wrap-Up</p>
+        <button class="change-activity" data-next-activity="Idle">Go Available</button>
+        <button class="change-activity" data-next-activity="Offline">Go Offline</button>
+    </section>
+    <section>
+        <button onclick="acceptReservation()">Accept</button>
+         <button class="hangup" onclick="hangup();">
+      Hangup
+    </button>
+    </section>
+    <section class="log">
+        <textarea id="log" readonly="true"></textarea>
+    </section>
+</div>
+   <!-- <button class="call" onclick="call();">
+      Call
+    </button>-->
+  
+
+  
+  <!--  <input type="text" id="number" name="number"
+      placeholder="Enter a phone number or client to call"/>
+
+  
+    <ul id="people"/> -->
+  </body>
+</html>
