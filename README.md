@@ -15,11 +15,11 @@ This implements:
 
 You will need to add in your own:
 
--AccountSID,
--AuthToken,
--Twiml ApplicationSID,
--WorkspaceSid
--WorkflowSids (Sales, Support, Billing, Managers, OOO)
+- AccountSID,
+- AuthToken,
+- Twiml ApplicationSID,
+- WorkspaceSid
+- WorkflowSids (Sales, Support, Billing, Managers, OOO)
 
 You will need to configure the above workspaces, workflows, taskqueues and assorted workers via the TaskRouter Console
 
