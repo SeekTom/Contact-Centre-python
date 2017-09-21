@@ -68,29 +68,27 @@
             worker.on('activity.update', function (worker) {
                 agentActivityChanged(worker.activityName);
 
-
                 logger("Worker activity changed to: " + worker.activityName);
                 var workerStatus = worker.activityName;
 
-                if (workerStatus == "Offline"){
-                    if (Twilio.Device.status() == 'busy') //Worker has been set to offline during a call, as app has received a participant-leave event for the inbound customer call
-                    {
-                        hangup(); //tear down the agent call
-                    }
-                }else
-                {
-                    console.log('worker is not offline, its state is: ' + workerStatus);
-                }
-            });
+                if (worker.activitySid == "WA1734410947caec098f53ed4f29e35732"){
 
-            worker.on("reservation.created", function (reservation) {
+                    if (ReservationObject){
+                        console.log("Worker is wrapping up!");
+                        console.log(ReservationObject);
+                        ReservationObject.task.complete();
+
+                    }
+                }
+
+            });
+                       worker.on("reservation.created", function (reservation) {
                 logger("-----");
                 logger("You have been reserved to handle a call!");
                 logger("Call from: " + reservation.task.attributes.from);
                 logger("Selected language: " + reservation.task.attributes.selected_language);
                 logger("-----");
                 logger(reservation.sid);
-                console.log(reservation.sid);
                 ReservationObject = reservation;
 
 
@@ -98,6 +96,8 @@
 
             worker.on("reservation.accepted", function (reservation) {
                 logger("Reservation " + reservation.sid + " accepted!");
+
+
             });
 
             worker.on("reservation.rejected", function (reservation) {
@@ -137,11 +137,8 @@
                 elements[i].onclick = function () {
                     var nextActivity = this.dataset.nextActivity;
                     var nextActivitySid = activitySids[nextActivity];
-                    worker.updateActivity(nextActivitySid);
 
-
-
-                   // console.log('from event change:' + ReservationObject.sid);
+                    worker.update({"ActivitySid":nextActivitySid}, function() {})
 
                 }
             }
@@ -165,6 +162,7 @@
         }
 
         function showAgentActivity(activity) {
+            console.log("current activitySID is: " + activity.sid);
             activity = activity.toLowerCase();
             var elements = document.getElementsByClassName(('agent-activity ' + activity));
             elements.item(0).style.display = 'block';
@@ -175,11 +173,11 @@
             var options = {
 
                 "From" : "+441273934716",
-                "PostWorkActivitySid" :  "WA20c6530534f9ef1361747282aa2158d0",
+                "PostWorkActivitySid" :  "WA1734410947caec098f53ed4f29e35732",
                 "Timeout" : "30",
                 "Record":"true",
                 "RecordingCallbackUrl": "https://requestb.in/t5k2lut5",
-                "ConferenceStatusCallback": "https://f7f0b077.ngrok.io/conference_callback",
+                "ConferenceStatusCallback": "https://acme-corp-demo.herokuapp.com/conference_callback",
                 "ConferenceStatusCallbackEvent": "start,end,join,leave",
                 "EndConferenceOnExit": "true"
             };
@@ -195,6 +193,8 @@
                     console.log("conference initiated");
                 }
            )
+
+
         }
 
         function logger(message) {

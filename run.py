@@ -4,7 +4,6 @@ from twilio.jwt.taskrouter.capabilities import WorkerCapabilityToken
 from twilio.twiml.voice_response import VoiceResponse, Enqueue
 from twilio.jwt.client import ClientCapabilityToken
 import os
-import datetime
 
 app = Flask(__name__,static_folder='app/static')
 
@@ -24,34 +23,27 @@ client = Client(account_sid, auth_token)
 #private functions
 
 def return_work_space(digits):
-    now = datetime.datetime.now()
-    if 8 <= now.hour <= 17:
 
-        digit_pressed = digits
-        if digit_pressed == "1":
-            department = "sales"
-            work_flow_sid = workflow_sales_sid
-            workflowdata = (work_flow_sid, department) #tuple
+    digit_pressed = digits
+    if digit_pressed == "1":
+        department = "sales"
+        work_flow_sid = workflow_sales_sid
+        workflowdata = (work_flow_sid, department) #tuple
 
-            return workflowdata
+        return workflowdata
 
-        if digit_pressed == "2":
-            department = "support"
-            work_flow_sid = workflow_sid
-            workflowdata = (work_flow_sid, department)
-
-            return workflowdata
-
-        if digit_pressed == "3":
-            department = "billing"
-            work_flow_sid = workflow_billing_sid
-            workflowdata = (work_flow_sid, department)
-
-            return workflowdata
-    else:
-        department = "OOO"
-        work_flow_sid = workflow_OOO_sid
+    if digit_pressed == "2":
+        department = "support"
+        work_flow_sid = workflow_sid
         workflowdata = (work_flow_sid, department)
+
+        return workflowdata
+
+    if digit_pressed == "3":
+        department = "billing"
+        work_flow_sid = workflow_billing_sid
+        workflowdata = (work_flow_sid, department)
+
         return workflowdata
 
 #Render index
@@ -64,7 +56,6 @@ def hello_world():
 
 @app.route("/incoming_call", methods=['GET', 'POST'])
 def incoming_call():
-    """Respond to incoming requests."""
 
     resp = VoiceResponse()
     with resp.gather(num_digits="1", action="/incoming_call/department", timeout=10) as g:
@@ -175,14 +166,14 @@ def enqueue_call_fr():
     return Response(str(resp), mimetype='text/xml')
 
 
-###########Agent views ######################
-
 @app.route('/incoming_call', methods=['POST', 'GET'])
 def call():
     resp = VoiceResponse()
     with resp.dial(callerId=caller_id) as r:
       r.client('TomPY')
     return str(resp)
+
+###########Agent views ######################
 
 @app.route("/agent_list", methods=['GET', 'POST'])
 def generate_agent_list_view():
@@ -205,7 +196,7 @@ def generate_view(charset='utf-8'):
         auth_token = auth_token,
         workspace_sid = workspace_sid,
         worker_sid = worker_sid
-    )
+    ) #generate worker capability token
 
     worker_capability.allow_update_activities()
     worker_capability.allow_update_reservations()
@@ -220,32 +211,34 @@ def generate_view(charset='utf-8'):
 
     return render_template('client.html', token=client_token.decode("utf-8"), worker_token=worker_token.decode("utf-8"), client_name=worker_sid)
 
+#Callbacks
+
 @app.route("/conference_callback", methods=['GET', 'POST'])
 def handle_callback():
 
-    if 'StatusCallbackEvent' in  request.values:
+ #   if 'StatusCallbackEvent' in  request.values:
+ #
+ #      cb_event = request.values.get('StatusCallbackEvent')
+ #      conf_mod = request.values.get('StartConferenceOnEnter')
+ #      reservation_sid  = request.values.get('ReservationSid')
+ #      task_sid = request.values.get('TaskSid')
+ #      print(cb_event)
+ #
+ #      if cb_event == "participant-leave":
+ #          if conf_mod == "true":
+ #              print("customer has left the conference!")   #customer has left so update the worker status to wrap up and update the agent call to completed
+ #
+ #              reservation = client.taskrouter.workspaces(workspace_sid) \
+ ##                 .tasks(task_sid).reservations(reservation_sid).fetch()
+ #             worker_sid = reservation.worker_sid
+ #
+ #              worker = client.taskrouter.workspaces(workspace_sid) \
+ #                  .workers(worker_sid).update(activity_sid="WA1734410947caec098f53ed4f29e35732")
+ #
+ #              from_number = request.args.get('from')
 
-        cb_event = request.values.get('StatusCallbackEvent')
-        conf_mod = request.values.get('StartConferenceOnEnter')
-        reservation_sid  = request.values.get('ReservationSid')
-        task_sid = request.values.get('TaskSid')
-        print(cb_event)
 
-        if cb_event == "participant-leave":
-            if conf_mod == "true":
-                print("customer has left the conference!")   #customer has left so update the worker status to offline and update the agent call to completed
-
-                reservation = client.taskrouter.workspaces(workspace_sid) \
-                   .tasks(task_sid).reservations(reservation_sid).fetch()
-                worker_sid = reservation.worker_sid
-
-                worker = client.taskrouter.workspaces(workspace_sid) \
-                    .workers(worker_sid).update(activity_sid="WA20c6530534f9ef1361747282aa2158d0")
-
-                from_number = request.args.get('from')
-
-
-            return render_template('status.html', from_number=from_number)
+ #          return render_template('status.html', from_number=from_number)
     return render_template('status.html')
 
 
