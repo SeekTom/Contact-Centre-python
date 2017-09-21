@@ -59,17 +59,18 @@
 
         function registerTaskRouterCallbacks() {
             worker.on('ready', function (worker) {
-                agentActivityChanged(worker.activityName);
                 logger("Successfully registered as: " + worker.friendlyName);
                 logger("Current activity is: " + worker.activityName);
+                 updateUIStatus(worker.activityName);
+
                 
             });
 
             worker.on('activity.update', function (worker) {
-                agentActivityChanged(worker.activityName);
 
                 logger("Worker activity changed to: " + worker.activityName);
                 var workerStatus = worker.activityName;
+                updateUIStatus(worker.activityName);
 
                 if (worker.activitySid == "WA1734410947caec098f53ed4f29e35732"){
 
@@ -77,10 +78,8 @@
                         console.log("Worker is wrapping up!");
                         console.log(ReservationObject);
                         ReservationObject.task.complete();
-
                     }
                 }
-
             });
                        worker.on("reservation.created", function (reservation) {
                 logger("-----");
@@ -113,63 +112,44 @@
             });
         }
 
-        /* Hook up the agent Activity buttons to TaskRouter.js */
 
-        function bindAgentActivityButtons() {
-            // Fetch the full list of available Activities from TaskRouter. Store each
-            // ActivitySid against the matching Friendly Name
-            var activitySids = {};
-            worker.activities.fetch(function (error, activityList) {
-                var activities = activityList.data;
-                var i = activities.length;
-                while (i--) {
-                    activitySids[activities[i].friendlyName] = activities[i].sid;
-                }
-            });
+        function goAvailable(){
 
-            /* For each button of class 'change-activity' in our Agent UI, look up the
-             ActivitySid corresponding to the Friendly Name in the button’s next-activity
-             data attribute. Use Worker.js to transition the agent to that ActivitySid
-             when the button is clicked.*/
-            var elements = document.getElementsByClassName('change-activity');
-            var i = elements.length;
-            while (i--) {
-                elements[i].onclick = function () {
-                    var nextActivity = this.dataset.nextActivity;
-                    var nextActivitySid = activitySids[nextActivity];
 
-                    worker.update({"ActivitySid":nextActivitySid}, function() {})
+        worker.update("ActivitySid", "WA2b2f79aad49868d29b8d4750c1eb02d2", function(error, worker) {
+          if(error) {
+            console.log(error.code);
+            console.log(error.message);
+          } else {
+            console.log(worker.activityName); // "Offline"
+          }
+        });
+            
 
-                }
-            }
         }
 
-        /* Update the UI to reflect a change in Activity */
+        function goOffline(){
 
-        function agentActivityChanged(activity) {
-            hideAgentActivities();
-            showAgentActivity(activity);
+
+        worker.update("ActivitySid", "WA20c6530534f9ef1361747282aa2158d0", function(error, worker) {
+          if(error) {
+            console.log(error.code);
+            console.log(error.message);
+          } else {
+            console.log(worker.activityName); // "Offline"
+          }
+        });
+
 
 
         }
 
-        function hideAgentActivities() {
-            var elements = document.getElementsByClassName('agent-activity');
-            var i = elements.length;
-            while (i--) {
-                elements[i].style.display = 'none';
-            }
-        }
+        function updateUIStatus(update){
 
-        function showAgentActivity(activity) {
-            console.log("current activitySID is: " + activity.sid);
-            activity = activity.toLowerCase();
-            var elements = document.getElementsByClassName(('agent-activity ' + activity));
-            elements.item(0).style.display = 'block';
+            statusDiv =  document.getElementById("worker_status").innerText = update;
         }
 
         function acceptReservation() {
-
             var options = {
 
                 "From" : "+441273934716",
@@ -190,10 +170,10 @@
                         console.log(error.message);
                         return;
                     }
-                    console.log("conference initiated");
                 }
            )
-
+            logger("Conference initiated!");
+            updateUIStatus("On a call");
 
         }
 
@@ -209,40 +189,22 @@
             // a Twilio Capability token that was set from rendering the template with agents endpoint
             logger("Initializing...");
             window.worker = new Twilio.TaskRouter.Worker("{{ worker_token| safe }}");
-
-
             registerTaskRouterCallbacks();
-            bindAgentActivityButtons();
+
         };
     </script>
   </head>
   <body>
   <div class="content">
       <h2>ACME agent desktop</h2>
-    <section class="agent-activity offline">
-        <p class="activity">Offline</p>
-        <button class="change-activity" data-next-activity="Idle">Go Available</button>
-    </section>
-    <section class="agent-activity idle">
-        <p class="activity"><span>Available</span></p>
-        <button class="change-activity" data-next-activity="Offline">Go Offline</button>
-    </section>
-    <section class="agent-activity reserved">
-        <p class="activity">Reserved</p>
-    </section>
-    <section class="agent-activity busy">
-        <p class="activity">Busy</p>
-    </section>
-    <section class="agent-activity wrapup">
-        <p class="activity">Wrap-Up</p>
-        <button class="change-activity" data-next-activity="Idle">Go Available</button>
-        <button class="change-activity" data-next-activity="Offline">Go Offline</button>
+
+   <section id="worker_status">
     </section>
     <section>
         <button onclick="acceptReservation()">Accept</button>
-         <button class="hangup" onclick="hangup();">
-      Hangup
-    </button>
+         <button onclick="hangup();">Hangup</button>
+         <button onclick="goAvailable()">Go Available</button>
+         <button onclick="goOffline()"> Go Offline</button>
     </section>
     <section class="log">
         <textarea id="log" readonly="true"></textarea>
