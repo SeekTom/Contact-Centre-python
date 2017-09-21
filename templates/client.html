@@ -11,6 +11,37 @@
    <!-- <link href="https://static0.twilio.com/resources/quickstart/client.css"
       type="text/css" rel="stylesheet" /> -->
         <link type="text/css"  rel="stylesheet" href="//media.twiliocdn.com/taskrouter/quickstart/agent.css"/>
+       <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+      <style>
+          .btn {
+  background: #3498db;
+  background-image: -webkit-linear-gradient(top, #3498db, #2980b9);
+  background-image: -moz-linear-gradient(top, #3498db, #2980b9);
+  background-image: -ms-linear-gradient(top, #3498db, #2980b9);
+  background-image: -o-linear-gradient(top, #3498db, #2980b9);
+  background-image: linear-gradient(to bottom, #3498db, #2980b9);
+  -webkit-border-radius: 28;
+  -moz-border-radius: 28;
+  border-radius: 28px;
+  font-family: Arial;
+  color: #ffffff;
+  font-size: 20px;
+  padding: 10px 20px 10px 20px;
+  text-decoration: none;
+}
+
+.btn:hover {
+  background: #3cb0fd;
+  background-image: -webkit-linear-gradient(top, #3cb0fd, #3498db);
+  background-image: -moz-linear-gradient(top, #3cb0fd, #3498db);
+  background-image: -ms-linear-gradient(top, #3cb0fd, #3498db);
+  background-image: -o-linear-gradient(top, #3cb0fd, #3498db);
+  background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
+  text-decoration: none;
+}
+      </style>
+
 
 
        <script type="text/javascript">
@@ -49,6 +80,10 @@
 
       function hangup() {
         Twilio.Device.disconnectAll();
+         document.getElementById("btn_hangup").style.display ="none";
+               document.getElementById("btn_online").style.display ="inline";
+               document.getElementById("btn_offline").style.display ="inline";
+
       }
 
     </script>
@@ -61,7 +96,8 @@
             worker.on('ready', function (worker) {
                 logger("Successfully registered as: " + worker.friendlyName);
                 logger("Current activity is: " + worker.activityName);
-                 updateUIStatus(worker.activityName);
+                
+                updateUIStatus(worker.activityName);
 
                 
             });
@@ -80,6 +116,14 @@
                         ReservationObject.task.complete();
                     }
                 }
+
+                if(worker.activityName == "Offline" || worker.activityName == "WrapUp"){
+
+                     document.getElementById("btn_online").style.display ="inline";
+                     document.getElementById("btn_offline").style.display ="none";
+                }
+
+
             });
                        worker.on("reservation.created", function (reservation) {
                 logger("-----");
@@ -89,13 +133,16 @@
                 logger("-----");
                 logger(reservation.sid);
                 ReservationObject = reservation;
+                document.getElementById("btn_accept").style.display ="inline";
+                document.getElementById("btn_reject").style.display ="inline";
+                document.getElementById("btn_offline").style.display ="none";
+
 
 
             });
 
             worker.on("reservation.accepted", function (reservation) {
                 logger("Reservation " + reservation.sid + " accepted!");
-
 
             });
 
@@ -124,8 +171,9 @@
             console.log(worker.activityName); // "Offline"
           }
         });
-            
 
+             document.getElementById("btn_online").style.display ="none";
+             document.getElementById("btn_offline").style.display ="inline";
         }
 
         function goOffline(){
@@ -141,12 +189,15 @@
         });
 
 
-
+         document.getElementById("btn_offline").style.display ="none";
         }
 
         function updateUIStatus(update){
 
             statusDiv =  document.getElementById("worker_status").innerText = update;
+
+
+
         }
 
         function acceptReservation() {
@@ -173,10 +224,20 @@
                 }
            )
             logger("Conference initiated!");
+             document.getElementById("btn_reject").style.display ="none";
+              document.getElementById("btn_accept").style.display ="none";
+               document.getElementById("btn_online").style.display ="none";
+                document.getElementById("btn_offline").style.display ="none";
+                 document.getElementById("btn_hangup").style.display ="inline";
+
             updateUIStatus("On a call");
 
         }
+        function rejectReservation(){
 
+            ReservationObject.reject();
+
+        }
         function logger(message) {
             var log = document.getElementById('log');
             log.value += "\n> " + message;
@@ -201,12 +262,16 @@
    <section id="worker_status">
     </section>
     <section>
-        <button onclick="acceptReservation()">Accept</button>
-         <button onclick="hangup();">Hangup</button>
-         <button onclick="goAvailable()">Go Available</button>
-         <button onclick="goOffline()"> Go Offline</button>
+    <br />
+         <button id="btn_accept" style="display:none;" class="btn" onclick="acceptReservation()">Accept</button>
+         <button id="btn_reject" style="display:none;" class="btn" onclick="rejectReservation()">Reject</button>
+         <button id="btn_hangup" style="display:none;" class="btn" onclick="hangup();">Hangup</button>
+         <button id="btn_online" style="display:none;" class="btn" onclick="goAvailable()">Go Available</button>
+         <button id="btn_offline" class="btn" onclick="goOffline()"> Go Offline</button>
     </section>
     <section class="log">
+    </section>
+      <br />
         <textarea id="log" readonly="true"></textarea>
     </section>
 </div>
