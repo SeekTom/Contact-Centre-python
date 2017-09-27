@@ -1,7 +1,7 @@
 from flask import Flask, request, Response, render_template
 from twilio.rest import Client
 from twilio.jwt.taskrouter.capabilities import WorkerCapabilityToken
-from twilio.twiml.voice_response import VoiceResponse, Enqueue
+from twilio.twiml.voice_response import VoiceResponse, Conference, Enqueue, Dial
 from twilio.jwt.client import ClientCapabilityToken
 import os
 
@@ -241,6 +241,46 @@ def handle_callback():
  #          return render_template('status.html', from_number=from_number)
     return render_template('status.html')
 
+@app.route("/callTransfer", methods=['GET', 'POST'])
+def transferCall():
+    #blind transfer put the call on hold
+
+    participant = client \
+        .conferences(request.values.get('conference')) \
+        .participants(request.values.get('participant')) \
+        .update(hold=True)
+
+
+    task = client.taskrouter.workspaces(workspace_sid).tasks \
+        .create(workflow_sid="WW4af8717df650b33eaaf1b9e5f52d8014", attributes='{"selected_product":"manager", "conference":"' + request.values.get('conference') + '", "customer":"' + request.values.get("customer") + '", "customer_taskSid":"' + request.values.get('taskSid') +'"}')
+
+    print(task.attributes)
+
+    return render_template('status.html')
+
+@app.route("/callmute", methods=['GET', 'POST'])
+def unmuteCall():
+    #put the call on hold
+
+    participant = client \
+        .conferences(request.values.get('conference')) \
+        .participants(request.values.get('participant')) \
+        .update(hold=request.values.get('muted'))
+
+
+
+    return render_template('status.html')
+
+
+@app.route("/transferTwiml", methods=['GET', 'POST'])
+def transferToManager():
+
+    response = VoiceResponse()
+    dial = Dial()
+    dial.conference(request.values.get('conference'))
+    response.append(dial)
+    print(response)
+    return Response(str(response), mimetype='text/xml')
 
 if __name__ == "__main__":
     app.run(debug=True)

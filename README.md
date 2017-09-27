@@ -1,6 +1,6 @@
 # Contact-Centre
 
-Inbound PSTN to Twilio Client Contact Centre Powered by Taskrouter version 0.3
+Inbound PSTN to Twilio Client Contact Centre Powered by Taskrouter version 0.5
 
 Languages: Python, js
 
@@ -12,7 +12,8 @@ This implements:
 - Twilio Client WebRTC dashboard
 - Conference instruction
 - Conference recording
-- Conference statuscallback monitoring
+- Call holding
+- Blind transfers
 
 You will need to add in your own:
 

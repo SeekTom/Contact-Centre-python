@@ -1,3 +1,5 @@
+today:
+
 <!DOCTYPE html>
 <html>
   <head>
@@ -80,6 +82,8 @@
 
       function hangup() {
         Twilio.Device.disconnectAll();
+
+
          document.getElementById("btn_hangup").style.display ="none";
                document.getElementById("btn_online").style.display ="inline";
                document.getElementById("btn_offline").style.display ="inline";
@@ -96,10 +100,7 @@
             worker.on('ready', function (worker) {
                 logger("Successfully registered as: " + worker.friendlyName);
                 logger("Current activity is: " + worker.activityName);
-                
                 updateUIStatus(worker.activityName);
-
-                
             });
 
             worker.on('activity.update', function (worker) {
@@ -108,16 +109,18 @@
                 var workerStatus = worker.activityName;
                 updateUIStatus(worker.activityName);
 
-                if (worker.activitySid == "WA1734410947caec098f53ed4f29e35732"){
+                if (worker.activitySid === "WA1734410947caec098f53ed4f29e35732"){
 
                     if (ReservationObject){
-                        console.log("Worker is wrapping up!");
-                        console.log(ReservationObject);
+                        //console.log("Worker is wrapping up!");
+                        //console.log(ReservationObject);
                         ReservationObject.task.complete();
                     }
                 }
 
-                if(worker.activityName == "Offline" || worker.activityName == "WrapUp"){
+
+
+                if(worker.activityName === "Offline" || worker.activityName === "WrapUp"){
 
                      document.getElementById("btn_online").style.display ="inline";
                      document.getElementById("btn_offline").style.display ="none";
@@ -130,6 +133,7 @@
                 logger("You have been reserved to handle a call!");
                 logger("Call from: " + reservation.task.attributes.from);
                 logger("Selected language: " + reservation.task.attributes.selected_language);
+                logger("Selected language: " + reservation.task.attributes.selected_product);
                 logger("-----");
                 logger(reservation.sid);
                 ReservationObject = reservation;
@@ -143,6 +147,7 @@
 
             worker.on("reservation.accepted", function (reservation) {
                 logger("Reservation " + reservation.sid + " accepted!");
+                ReservationObject = reservation; //update reservationObject to contain the updated reservation information/task attributes e.g. conference
 
             });
 
@@ -195,35 +200,66 @@
         function updateUIStatus(update){
 
             statusDiv =  document.getElementById("worker_status").innerText = update;
+            if (update === "Offline") {
 
-
-
+                    document.getElementById("btn_online").style.display ="inline";
+                    document.getElementById("btn_offline").style.display ="none";
+                }
         }
 
         function acceptReservation() {
-            var options = {
+             console.log(ReservationObject.task.attributes.customer);
+                console.log(ReservationObject.task.attributes.conference);
 
-                "From" : "+441273934716",
-                "PostWorkActivitySid" :  "WA1734410947caec098f53ed4f29e35732",
-                "Timeout" : "30",
-                "Record":"true",
-                "RecordingCallbackUrl": "https://requestb.in/t5k2lut5",
-                "ConferenceStatusCallback": "https://acme-corp-demo.herokuapp.com/conference_callback",
-                "ConferenceStatusCallbackEvent": "start,end,join,leave",
-                "EndConferenceOnExit": "true"
-            };
+            if (ReservationObject.task.attributes.selected_product === "manager"){
+                console.log("its a manager call!")
+                ReservationObject.accept();
+                ReservationObject.call(
+                    "+441273934716",
+                    "https://19033483.ngrok.io/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid,
+                    "https://requestb.in/t5k2lut5",
+                    "false",
 
-            ReservationObject.conference(null, null, null, null, null, options,
 
-                function (error, reservation) {
-                    if (error) {
-                        console.log(error.code);
-                        console.log(error.message);
-                        return;
+                    function(error, reservation) {
+                        if(error) {
+                            console.log(error.code);
+                            console.log(error.message);
+                            return;
+                        }
+                        console.log("reservation called the worker");
                     }
-                }
-           )
-            logger("Conference initiated!");
+                );
+                unmuteCaller(ReservationObject.task.attributes.customer, ReservationObject.task.attributes.conference);
+            }
+            else {
+
+
+                var options = {
+
+                    "From": "+441273934716",
+                    "PostWorkActivitySid": "WA1734410947caec098f53ed4f29e35732",
+                    "Timeout": "30",
+                    "Record": "true",
+                    "RecordingCallbackUrl": "https://requestb.in/t5k2lut5",
+                    "ConferenceStatusCallback": "https://acme-corp-demo.herokuapp.com/conference_callback",
+                    "ConferenceStatusCallbackEvent": "start,end,join,leave"
+                };
+
+                ReservationObject.conference(null, null, null, null, null, options,
+
+                    function (error, reservation) {
+                        if (error) {
+                            console.log(error.code);
+                            console.log(error.message);
+                            return;
+                        }
+                    }
+                );
+                logger("Conference initiated!");
+            }
+
+
              document.getElementById("btn_reject").style.display ="none";
               document.getElementById("btn_accept").style.display ="none";
                document.getElementById("btn_online").style.display ="none";
@@ -236,6 +272,46 @@
         function rejectReservation(){
 
             ReservationObject.reject();
+
+        }
+
+        function transferCallBlind_Manager()
+
+        {
+            //Initiate a blind transfer to a Manager
+            //Make a post request to /callTransfer with the from, to, agent and tasksid
+            // callTransfer endpoint will put customer on hold and create a new task/route call to manage
+            console.log(ReservationObject.task.sid);
+            $.post( "/callTransfer", { participant: ReservationObject.task.attributes.conference.participants.customer, conference: ReservationObject.task.attributes.conference.sid, customer: ReservationObject.task.attributes.conference.participants.customer, taskSid:ReservationObject.task.sid } );
+
+
+      /*  $.post( "/callTransfer", {"participant": , "conference": ReservationObject.task.attributes.conference.sid})
+          .done(function( data ) {
+            alert( "Data Loaded: " + data );
+          }); */
+
+            }
+
+        function muteCaller(){
+
+
+                $.post( "/callmute", { participant: ReservationObject.task.attributes.conference.participants.customer, conference: ReservationObject.task.attributes.conference.sid, muted:"True"} );
+
+
+
+        }
+
+        function unmuteCaller(customer){
+
+              if (customer) {
+                $.post( "/callmute", { participant: customer, conference: ReservationObject.task.attributes.conference, muted:"False"} );
+
+            }
+            else
+            {
+                $.post( "/callmute", { participant: ReservationObject.task.attributes.conference.participants.customer, conference: ReservationObject.task.attributes.conference.sid, muted:"False"} );
+            }
+
 
         }
         function logger(message) {
@@ -265,7 +341,11 @@
     <br />
          <button id="btn_accept" style="display:none;" class="btn" onclick="acceptReservation()">Accept</button>
          <button id="btn_reject" style="display:none;" class="btn" onclick="rejectReservation()">Reject</button>
-         <button id="btn_hangup" style="display:none;" class="btn" onclick="hangup();">Hangup</button>
+         <button id="btn_reject" style="display:none;" class="btn" onclick="rejectReservation()">Reject</button>
+         <button id="btn_escalate" class="btn" onclick="transferCallBlind_Manager()">Escalate</button>
+         <button id="btn_mute" class="btn" onclick="muteCaller()">Mute</button>
+        <button id="btn_unmute" class="btn" onclick="unmuteCaller()">Unmute</button>
+        <button id="btn_hangup" style="display:none;" class="btn" onclick="hangup();">Hangup</button>
          <button id="btn_online" style="display:none;" class="btn" onclick="goAvailable()">Go Available</button>
          <button id="btn_offline" class="btn" onclick="goOffline()"> Go Offline</button>
     </section>
@@ -278,13 +358,13 @@
    <!-- <button class="call" onclick="call();">
       Call
     </button>-->
-  
 
-  
+
+
   <!--  <input type="text" id="number" name="number"
       placeholder="Enter a phone number or client to call"/>
 
-  
+
     <ul id="people"/> -->
   </body>
 </html>
