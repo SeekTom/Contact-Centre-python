@@ -1,6 +1,6 @@
-# Contact-Centre
+# Contact-Centre Version 0.5
 
-Inbound PSTN to Twilio Client Contact Centre Powered by Taskrouter version 0.5
+Inbound PSTN to Twilio Client Contact Centre Powered by Taskrouter 
 
 Languages: Python, js
 
@@ -13,7 +13,7 @@ This implements:
 - Conference instruction
 - Conference recording
 - Call holding
-- Blind transfers
+- Call transfers
 
 You will need to add in your own:
 
