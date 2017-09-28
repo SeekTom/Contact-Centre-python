@@ -8,7 +8,6 @@ This implements:
 
 - 4 channel, multilingual contact centre
 - Agent UI based on TaskRouter SDK for low latency
-- Working hours
 - Twilio Client WebRTC dashboard
 - Conference instruction
 - Conference recording
