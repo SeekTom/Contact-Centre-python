@@ -5,30 +5,31 @@ from twilio.twiml.voice_response import VoiceResponse, Conference, Enqueue, Dial
 from twilio.jwt.client import ClientCapabilityToken
 import os
 
-app = Flask(__name__,static_folder='app/static')
+app = Flask(__name__, static_folder='app/static')
 
 # Your Account Sid and Auth Token from twilio.com/user/account
 account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
 auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
 workspace_sid = os.environ.get("TWILIO_ACME_WORKSPACE_SID")
-workflow_sid = os.environ.get("TWILIO_ACME_SUPPORT_WORKFLOW_SID") #support
-workflow_sales_sid = os.environ.get("TWILIO_ACME_SALES_WORKFLOW_SID") #sales
-workflow_billing_sid = os.environ.get("TWILIO_ACME_BILLING_WORKFLOW_SID") #billing
+workflow_sid = os.environ.get("TWILIO_ACME_SUPPORT_WORKFLOW_SID")  # support
+workflow_sales_sid = os.environ.get("TWILIO_ACME_SALES_WORKFLOW_SID")  # sales
+workflow_billing_sid = os.environ.get("TWILIO_ACME_BILLING_WORKFLOW_SID")  # billing
 workflow_OOO_sid = os.environ.get("TWILIO_ACME_OOO_SID")
 
 twiml_app = os.environ.get("TWILIO_ACME_TWIML_APP_SID")
 caller_id = os.environ.get("TWILIO_ACME_CALLERID")
 
 client = Client(account_sid, auth_token)
-#private functions
+
+
+# private functions
 
 def return_work_space(digits):
-
     digit_pressed = digits
     if digit_pressed == "1":
         department = "sales"
         work_flow_sid = workflow_sales_sid
-        workflowdata = (work_flow_sid, department) #tuple
+        workflowdata = (work_flow_sid, department)  # tuple
 
         return workflowdata
 
@@ -46,17 +47,18 @@ def return_work_space(digits):
 
         return workflowdata
 
-#Render index
+
+# Render index
 
 @app.route("/", methods=['GET', 'POST'])
 def hello_world():
     return render_template('index.html')
 
-#Default route for support line voice request url
+
+# Default route for support line voice request url
 
 @app.route("/incoming_call", methods=['GET', 'POST'])
 def incoming_call():
-
     resp = VoiceResponse()
     with resp.gather(num_digits="1", action="/incoming_call/department", timeout=10) as g:
         g.say("Para Espanol oprime el uno.", language='es')
@@ -64,6 +66,7 @@ def incoming_call():
         g.say("Pour Francais, pressé un", language='fr')
 
     return Response(str(resp), mimetype='text/xml')
+
 
 ##################################################################
 
@@ -86,9 +89,10 @@ def choose_dept():
             resp.redirect("/dept/fr")
             return str(resp)
 
-#Select department
 
-@app.route("/dept/es", methods=["GET","POST"])
+# Select department
+
+@app.route("/dept/es", methods=["GET", "POST"])
 def es_dept():
     resp = VoiceResponse()
     with resp.gather(num_digits="1", action="/enqueue_call_es", timeout="10") as g:
@@ -97,7 +101,8 @@ def es_dept():
         g.say("para billing oprime tres", language='es')
     return str(resp)
 
-@app.route("/dept/en", methods=["GET","POST"])
+
+@app.route("/dept/en", methods=["GET", "POST"])
 def en_dept():
     resp = VoiceResponse()
     with resp.gather(num_digits="1", action="/enqueue_call_en", timeout="10") as g:
@@ -106,7 +111,8 @@ def en_dept():
         g.say("For Billing press three", language='en')
     return str(resp)
 
-@app.route("/dept/fr", methods=["GET","POST"])
+
+@app.route("/dept/fr", methods=["GET", "POST"])
 def fr_dept():
     resp = VoiceResponse()
 
@@ -116,9 +122,10 @@ def fr_dept():
         g.say("Pour billing pressé tres", language='fr')
     return str(resp)
 
-#Enqueue calls to tasks based on language
 
-@app.route("/enqueue_call_es", methods=["GET","POST"])
+# Enqueue calls to tasks based on language
+
+@app.route("/enqueue_call_es", methods=["GET", "POST"])
 def enqueue_call_es():
     if 'Digits' in request.values:
         digit_pressed = request.values['Digits']
@@ -133,9 +140,9 @@ def enqueue_call_es():
         resp.say("no digits detected")
     return Response(str(resp), mimetype='text/xml')
 
-@app.route("/enqueue_call_en", methods=["GET","POST"])
-def enqueue_call_en():
 
+@app.route("/enqueue_call_en", methods=["GET", "POST"])
+def enqueue_call_en():
     if 'Digits' in request.values:
         digit_pressed = request.values['Digits']
         workflow_d = return_work_space(digit_pressed)
@@ -149,9 +156,9 @@ def enqueue_call_en():
         resp.say("no digits detected")
     return Response(str(resp), mimetype='text/xml')
 
-@app.route("/enqueue_call_fr", methods=["GET","POST"])
-def enqueue_call_fr():
 
+@app.route("/enqueue_call_fr", methods=["GET", "POST"])
+def enqueue_call_fr():
     if 'Digits' in request.values:
         digit_pressed = request.values['Digits']
         workflow_d = return_work_space(digit_pressed)
@@ -170,8 +177,9 @@ def enqueue_call_fr():
 def call():
     resp = VoiceResponse()
     with resp.dial(callerId=caller_id) as r:
-      r.client('TomPY')
+        r.client('TomPY')
     return str(resp)
+
 
 ###########Agent views ######################
 
@@ -184,103 +192,108 @@ def generate_agent_list_view():
         worker_list.append(worker.sid)
         worker_list.append(worker.friendly_name)
 
-    return render_template('agent_list.html', workers= worker_list)
+    return render_template('agent_list.html', workers=worker_list)
 
 
 @app.route("/agents", methods=['GET'])
 def generate_view(charset='utf-8'):
-
-    worker_sid = request.args.get('WorkerSid') #TaskRouter Worker Token
+    worker_sid = request.args.get('WorkerSid')  # TaskRouter Worker Token
     worker_capability = WorkerCapabilityToken(
-        account_sid = account_sid,
-        auth_token = auth_token,
-        workspace_sid = workspace_sid,
-        worker_sid = worker_sid
-    ) #generate worker capability token
+        account_sid=account_sid,
+        auth_token=auth_token,
+        workspace_sid=workspace_sid,
+        worker_sid=worker_sid
+    )  # generate worker capability token
 
     worker_capability.allow_update_activities()
     worker_capability.allow_update_reservations()
     worker_token = worker_capability.to_jwt(ttl=28800)
 
-    capability = ClientCapabilityToken(account_sid, auth_token) #agent Twilio Client capability token
+    capability = ClientCapabilityToken(account_sid, auth_token)  # agent Twilio Client capability token
     capability.allow_client_outgoing(twiml_app)
     capability.allow_client_incoming(worker_sid)
 
     client_token = capability.to_jwt()
 
+    return render_template('client.html', token=client_token.decode("utf-8"), worker_token=worker_token.decode("utf-8"),
+                           client_name=worker_sid)
 
-    return render_template('client.html', token=client_token.decode("utf-8"), worker_token=worker_token.decode("utf-8"), client_name=worker_sid)
 
-#Callbacks
+# Callbacks
 
 @app.route("/conference_callback", methods=['GET', 'POST'])
 def handle_callback():
+    #   if 'StatusCallbackEvent' in  request.values:
+    #
+    #      cb_event = request.values.get('StatusCallbackEvent')
+    #      conf_mod = request.values.get('StartConferenceOnEnter')
+    #      reservation_sid  = request.values.get('ReservationSid')
+    #      task_sid = request.values.get('TaskSid')
+    #      print(cb_event)
+    #
+    #      if cb_event == "participant-leave":
+    #          if conf_mod == "true":
+    #              print("customer has left the conference!")   #customer has left so update the worker status to wrap up and update the agent call to completed
+    #
+    #              reservation = client.taskrouter.workspaces(workspace_sid) \
+    ##                 .tasks(task_sid).reservations(reservation_sid).fetch()
+    #             worker_sid = reservation.worker_sid
+    #
+    #              worker = client.taskrouter.workspaces(workspace_sid) \
+    #                  .workers(worker_sid).update(activity_sid="WA1734410947caec098f53ed4f29e35732")
+    #
+    #              from_number = request.args.get('from')
 
- #   if 'StatusCallbackEvent' in  request.values:
- #
- #      cb_event = request.values.get('StatusCallbackEvent')
- #      conf_mod = request.values.get('StartConferenceOnEnter')
- #      reservation_sid  = request.values.get('ReservationSid')
- #      task_sid = request.values.get('TaskSid')
- #      print(cb_event)
- #
- #      if cb_event == "participant-leave":
- #          if conf_mod == "true":
- #              print("customer has left the conference!")   #customer has left so update the worker status to wrap up and update the agent call to completed
- #
- #              reservation = client.taskrouter.workspaces(workspace_sid) \
- ##                 .tasks(task_sid).reservations(reservation_sid).fetch()
- #             worker_sid = reservation.worker_sid
- #
- #              worker = client.taskrouter.workspaces(workspace_sid) \
- #                  .workers(worker_sid).update(activity_sid="WA1734410947caec098f53ed4f29e35732")
- #
- #              from_number = request.args.get('from')
 
-
- #          return render_template('status.html', from_number=from_number)
+    #          return render_template('status.html', from_number=from_number)
     return render_template('status.html')
+
 
 @app.route("/callTransfer", methods=['GET', 'POST'])
 def transferCall():
-    #blind transfer put the call on hold
+    # transfer call
+    # put the customer call on hold
 
     participant = client \
         .conferences(request.values.get('conference')) \
         .participants(request.values.get('participant')) \
         .update(hold=True)
-
+    #create new task for the manager escalation
+    #add new attributes on the task for customer callsid, customer tasksid and conference
 
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid="WW4af8717df650b33eaaf1b9e5f52d8014", attributes='{"selected_product":"manager", "conference":"' + request.values.get('conference') + '", "customer":"' + request.values.get("customer") + '", "customer_taskSid":"' + request.values.get('taskSid') +'"}')
+        .create(workflow_sid="WW4af8717df650b33eaaf1b9e5f52d8014",
+                attributes='{"selected_product":"manager", "conference":"' + request.values.get(
+                    'conference') + '", "customer":"' + request.values.get(
+                    "customer") + '", "customer_taskSid":"' + request.values.get('taskSid') + '"}')
 
-    print(task.attributes)
+    resp = VoiceResponse
+    return Response(str(resp), mimetype='text/xml')
 
-    return render_template('status.html')
 
 @app.route("/callmute", methods=['GET', 'POST'])
 def unmuteCall():
-    #put the call on hold
+    # put the call on hold
+    #grab the conferenceSid and customerCallSid from the values sent by the agent UI
 
     participant = client \
         .conferences(request.values.get('conference')) \
         .participants(request.values.get('participant')) \
         .update(hold=request.values.get('muted'))
 
-
-
-    return render_template('status.html')
+    resp = VoiceResponse
+    return Response(str(resp), mimetype='text/xml')
 
 
 @app.route("/transferTwiml", methods=['GET', 'POST'])
 def transferToManager():
-
     response = VoiceResponse()
     dial = Dial()
     dial.conference(request.values.get('conference'))
     response.append(dial)
     print(response)
     return Response(str(response), mimetype='text/xml')
+
 
 if __name__ == "__main__":
     app.run(debug=True)
