@@ -11,7 +11,7 @@
         function registerTaskRouterCallbacks() {
             worker.on('ready', function (worker) {
                 agentActivityChanged(worker.activityName);
-                logger("Successfully registered as: " + worker.friendlyName)
+                logger("Successfully registered as: " + worker.friendlyName);
                 logger("Current activity is: " + worker.activityName);
             });
 
@@ -107,7 +107,8 @@
 
         function acceptReservation() {
 
-            var options = {
+            ReservationObject.task.accept();
+            /*var options = {
                 "From" : "+441273934716",
                 "Timeout" : "30",
                 "PostWorkActivitySid" :  "WA20c6530534f9ef1361747282aa2158d0",
@@ -128,7 +129,7 @@
                     }
                     console.log("conference initiated");
                 }
-           )
+           )*/
         }
 
         function logger(message) {
