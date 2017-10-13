@@ -75,14 +75,42 @@
 
         function hangup() {
             Twilio.Device.disconnectAll();
+            if (ReservationObject.task.attributes.selected_product === "manager"){
 
+                logger(worker.friendlyName + " has ended the call");
+                ReservationObject.task.complete();
+            }
+            else{
+                logger(worker.friendlyName + " has ended the call");
+            }
+            document.getElementById("btn_hangup").style.display = "none";
+            document.getElementById("btn_online").style.display = "none";
+            document.getElementById("btn_offline").style.display = "inline";
+            document.getElementById("btn_mute").style.display = "none";
+            document.getElementById("btn_unmute").style.display = "none";
+        }
+
+          function hangupManager() {
+            ReservationObject.task.complete(); //complete the call instruction task
+            //set the manager to wrap up
+             worker.update("ActivitySid", "WA1734410947caec098f53ed4f29e35732", function (error, worker) {
+                if (error) {
+                    console.log(error.code);
+                    console.log(error.message);
+                } else {
+                    console.log(worker.activityName);
+                }
+            });
+
+             Twilio.Device.disconnectAll();
 
             document.getElementById("btn_hangup").style.display = "none";
             document.getElementById("btn_online").style.display = "none";
-            document.getElementById("btn_offline").style.display = "none";
-
-
+            document.getElementById("btn_offline").style.display = "inline";
+            document.getElementById("btn_mute").style.display = "none";
+            document.getElementById("btn_unmute").style.display = "none";
         }
+
 
     </script>
 
@@ -227,6 +255,8 @@
                         console.log("reservation called the worker");
                     }
                 );
+                 document.getElementById("btn_hangupManager").style.display = "inline";
+
                 unmuteCaller(ReservationObject.task.attributes.customer, ReservationObject.task.attributes.conference);
             }
             else {
@@ -254,6 +284,8 @@
                     }
                 );
                 logger("Conference initiated!");
+                document.getElementById("btn_hangup").style.display = "inline";
+
             }
 
 
@@ -261,7 +293,6 @@
             document.getElementById("btn_accept").style.display = "none";
             document.getElementById("btn_online").style.display = "none";
             document.getElementById("btn_offline").style.display = "none";
-            document.getElementById("btn_hangup").style.display = "inline";
             document.getElementById("btn_mute").style.display = "inline";
             document.getElementById("btn_unmute").style.display = "inline";
             document.getElementById("btn_escalate").style.display = "inline";
@@ -284,18 +315,17 @@
             // callTransfer endpoint will put customer on hold and create a new task/route call to manage
           //  console.log(ReservationObject.task.sid);
             $.post("/callTransfer", {
-                participant: ReservationObject.task.attributes.conference.participants.customer,
-                conference: ReservationObject.task.attributes.conference.sid,
-                customer: ReservationObject.task.attributes.conference.participants.customer,
-                taskSid: ReservationObject.task.sid
+                participant: ReservationObject.task.attributes.conference.participants.customer, //customer callSid
+                conference: ReservationObject.task.attributes.conference.sid, //conference
+
+                customer: ReservationObject.task.attributes.conference.participants.customer, //customer callsid - consider removing
+                taskSid: ReservationObject.task.sid //tasksid for the call transfer
             });
 
 
         }
 
         function muteCaller() {
-
-
             $.post("/callmute", {
                 participant: ReservationObject.task.attributes.conference.participants.customer,
                 conference: ReservationObject.task.attributes.conference.sid,
@@ -358,6 +388,7 @@
         <button id="btn_mute" style="display:none;" class="btn" onclick="muteCaller()">Mute</button>
         <button id="btn_unmute" style="display:none;" class="btn" onclick="unmuteCaller()">Unmute</button>
         <button id="btn_hangup" style="display:none;" class="btn" onclick="hangup();">Hangup</button>
+           <button id="btn_hangupManager" style="display:none;" class="btn" onclick="hangupManager();">Hangup</button>
         <button id="btn_online" style="display:none;" class="btn" onclick="goAvailable()">Go Available</button>
         <button id="btn_offline" class="btn" onclick="goOffline()"> Go Offline</button>
     </section>
