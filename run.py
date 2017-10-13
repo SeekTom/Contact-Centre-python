@@ -280,14 +280,12 @@ def transferCall():
         .conferences(request.values.get('conference')) \
         .participants(request.values.get('participant')) \
         .update(hold=True)
-
-    
     # create new task for the manager escalation
     # manager workflow is set manually for now, scope for making that a variable based on who the worker is selecting to escalate to in the next version
     # add new attributes on the task for customer callsid, customer tasksid and conference
 
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid="WW4af8717df650b33eaaf1b9e5f52d8014", #replace this with your manager workflow
+        .create(workflow_sid="WW4af8717df650b33eaaf1b9e5f52d8014",
                 attributes='{"selected_product":"manager", "conference":"' + request.values.get(
                     'conference') + '", "customer":"' + request.values.get(
                     "customer") + '", "customer_taskSid":"' + request.values.get('taskSid') + '"}')
@@ -321,7 +319,6 @@ def transferToManager():
     response.append(dial)
 
     return Response(str(response), mimetype='text/xml')
-
 
     return (response)
 if __name__ == "__main__":

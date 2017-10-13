@@ -210,12 +210,11 @@
         function acceptReservation() {
 
             if (ReservationObject.task.attributes.selected_product === "manager") {
-                console.log("its a manager call!");
                 ReservationObject.accept();
                 ReservationObject.call(
-                    "+441273934716",
-                    "https://acme-corp-demo.herokuapp.com/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid,
-                    "https://requestb.in/t5k2lut5",
+                    "+441273934716",//replace with your own
+                    "https://acme-corp-demo.herokuapp.com/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid, //replace with your own url
+                    "https://requestb.in/1128c331", //replace with your own url
                     "false",
 
 
@@ -239,8 +238,8 @@
                     "PostWorkActivitySid": "WA1734410947caec098f53ed4f29e35732", //replace with your postActivitySid
                     "Timeout": "30",
                     "Record": "true",
-                    "RecordingCallbackUrl": "https://requestb.in/t5k2lut5",
-                    "ConferenceStatusCallback": "https://acme-corp-demo.herokuapp.com/conference_callback",
+                    "RecordingCallbackUrl": "https://requestb.in/1128c331", //replace with your own url
+                    "ConferenceStatusCallback": "https://acme-corp-demo.herokuapp.com/conference_callback", //replace with your own url
                     "ConferenceStatusCallbackEvent": "start,end,join,leave"
                 };
 
