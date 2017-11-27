@@ -1,20 +1,32 @@
-from flask import Flask, request, Response, render_template
+from flask import Flask, request, Response, render_template, jsonify
 from twilio.rest import Client
 from twilio.jwt.taskrouter.capabilities import WorkerCapabilityToken
 from twilio.twiml.voice_response import VoiceResponse, Conference, Enqueue, Dial
+from twilio.twiml.messaging_response import Message, MessagingResponse
 from twilio.jwt.client import ClientCapabilityToken
+from twilio.jwt.access_token import AccessToken
+from twilio.jwt.access_token.grants import (ChatGrant)
+from faker import Faker, Factory
+
 import os
 
 app = Flask(__name__, static_folder='app/static')
+fake = Factory.create()
 
 # Your Account Sid and Auth Token from twilio.com/user/account
 account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
 auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
+
 workspace_sid = os.environ.get("TWILIO_ACME_WORKSPACE_SID")
 workflow_sid = os.environ.get("TWILIO_ACME_SUPPORT_WORKFLOW_SID")  # support
 workflow_sales_sid = os.environ.get("TWILIO_ACME_SALES_WORKFLOW_SID")  # sales
 workflow_billing_sid = os.environ.get("TWILIO_ACME_BILLING_WORKFLOW_SID")  # billing
 workflow_OOO_sid = os.environ.get("TWILIO_ACME_OOO_SID")
+
+api_key = os.environ.get("TWILIO_ACME_CHAT_API_KEY")
+api_secret = os.environ.get("TWILIO_ACME_CHAT_SECRET")
+chat_service = os.environ.get("TWILIO_ACME_CHAT_SERVICE_SID")
+
 
 twiml_app = os.environ.get("TWILIO_ACME_TWIML_APP_SID")
 caller_id = os.environ.get("TWILIO_ACME_CALLERID")
@@ -262,13 +274,20 @@ def handle_callback():
 
         cb_event = request.values.get('StatusCallbackEvent')
         conf_moderator = request.values.get('StartConferenceOnEnter')
+        call = client.calls(request.values.get("CallSid")).fetch()
+        caller = call.from_
 
         if cb_event == "participant-leave":
             if conf_moderator == "true":
-                print("Customer has left the conference!")
+                message = client.messages.create(
+                    to=caller,
+                    from_="+447481343625",
+                    body="Thanks for calling OwlCorp, how satisfied were you with your designated agent on a scale of 1 to 10?")
             else:
                 print("Something else happened: " + cb_event)
     return render_template('status.html')
+
+
 
 
 @app.route("/callTransfer", methods=['GET', 'POST'])
@@ -316,10 +335,55 @@ def transferToManager():
     dial = Dial()
 
     dial.conference(request.values.get('conference'))
+
     response.append(dial)
 
     return Response(str(response), mimetype='text/xml')
 
-    return (response)
+@app.route('/chat/')
+def chat():
+    return render_template('chat.html')
+
+# Basic health check - check environment variables have been configured
+# correctly
+@app.route('/config')
+def config():
+    return jsonify(
+        account_sid,
+        api_key,
+        api_secret,
+        chat_service,
+    )
+
+@app.route('/token', methods=['GET'])
+def randomToken():
+    return generateToken(fake.user_name())
+
+
+@app.route('/token', methods=['POST'])
+def createToken():
+    # Get the request json or form data
+    content = request.get_json() or request.form
+    # get the identity from the request, or make one up
+    identity = content.get('identity', fake.user_name())
+    return generateToken(identity)
+
+@app.route('/token/<identity>', methods=['POST', 'GET'])
+def token(identity):
+    return generateToken(identity)
+
+def generateToken(identity):
+
+    # Create access token with credentials
+    token = AccessToken(account_sid, api_key, api_secret, identity=identity)
+
+    if chat_service:
+        chat_grant = ChatGrant(service_sid=chat_service)
+        token.add_grant(chat_grant)
+    print(api_secret)
+    # Return token info as JSON
+    return jsonify(identity=identity, token=token.to_jwt().decode('utf-8'))
+
+
 if __name__ == "__main__":
     app.run(debug=True)
