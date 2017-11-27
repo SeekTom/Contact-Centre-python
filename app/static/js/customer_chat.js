@@ -24,11 +24,6 @@ $(function() {
         $chatWindow.append($msg);
     }
 
-    function logger(message) {
-            var log = document.getElementById('log');
-            log.value += "\n> " + message;
-            log.scrollTop = log.scrollHeight;
-        }
     // Helper function to print chat message to the chat window
     function printMessage(fromUser, message) {
         var $user = $('<span class="username">').text(fromUser + ':');
@@ -43,7 +38,7 @@ $(function() {
     }
 
     // Alert the user they have been assigned a random username
-    logger('Logging in...');
+    print('Logging in...');
 
     // Get an access token for the current user, passing a username (identity)
     // and a device ID - for browser-based apps, we'll always just use the 
@@ -58,31 +53,33 @@ $(function() {
 
         // Initialize the Chat client
         chatClient = new Twilio.Chat.Client(data.token);
-        chatClient.getSubscribedChannels().then(createOrJoinGeneralChannel);        
+        chatClient.getSubscribedChannels().then(createOrJoinGeneralChannel);
     });
-
 
     function createOrJoinGeneralChannel() {
         // Get the general chat channel, which is where all the messages are
         // sent in this simple application
-       logger('Attempting to join "general" chat channel...');
+        print('Attempting to join "general" chat channel...');
         var promise = chatClient.getChannelByUniqueName('general');
         promise.then(function(channel) {
             generalChannel = channel;
-           logger('Found general channel:');
+            console.log('Found general channel:');
             console.log(generalChannel);
+
             setupChannel();
         }).catch(function() {
             // If it doesn't exist, let's create it
-            logger('Creating general channel');
+            console.log('Creating general channel');
             chatClient.createChannel({
                 uniqueName: 'general',
                 friendlyName: 'General Chat Channel'
             }).then(function(channel) {
-                logger('Created general channel:');
-                logger(channel);
+                console.log('Created general channel:');
+                console.log(channel);
                 generalChannel = channel;
                 setupChannel();
+
+
             });
         });
     }
@@ -90,10 +87,17 @@ $(function() {
     // Set up channel after it has been found
     function setupChannel() {
         // Join the general channel
+
         generalChannel.join().then(function(channel) {
             print('Joined channel as '
-                + '<span class="me">' + username + '</span>.', true);
+                + '<span class="me">' + username + ', please wait for an agent.</span>.', true);
+              $.post("/createChatTask/", {
+                channel_ID: channel.sid,
+            });
+
         });
+
+
 
         // Listen for new messages sent to the channel
         generalChannel.on('messageAdded', function(message) {
@@ -110,4 +114,3 @@ $(function() {
         }
     });
 });
-

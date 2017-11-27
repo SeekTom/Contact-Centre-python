@@ -342,7 +342,39 @@ def transferToManager():
 
 @app.route('/chat/')
 def chat():
+
     return render_template('chat.html')
+
+@app.route('/createChatTask/', methods=['POST'])
+def createChatTask():
+
+
+    task = client.taskrouter.workspaces(workspace_sid).tasks \
+        .create(workflow_sid="WW5bc2a216556a9cc2e8d4b8507e8fc502",
+                attributes='{"selected_product":"chat", "channel":"' + request.values.get(
+                    'channel_ID') + '"}')
+
+    resp = VoiceResponse
+    return Response(str(resp), mimetype='text/xml')
+
+
+@app.route('/agent_chat')
+def agentChat():
+    worker_sid = request.args.get('WorkerSid')  # TaskRouter Worker Token
+    worker_capability = WorkerCapabilityToken(
+        account_sid=account_sid,
+        auth_token=auth_token,
+        workspace_sid=workspace_sid,
+        worker_sid=worker_sid
+    )  # generate worker capability token
+
+    worker_capability.allow_update_activities()  # allow agent to update their activity status e.g. go offline
+    worker_capability.allow_update_reservations()  # allow agents to update reservations e.g. accept/reject
+
+    worker_token = worker_capability.to_jwt(ttl=28800)
+
+    return render_template('agent_desktop_chat.html', worker_token=worker_token.decode(
+        "utf-8"))
 
 # Basic health check - check environment variables have been configured
 # correctly
