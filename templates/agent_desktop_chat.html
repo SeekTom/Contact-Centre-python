@@ -41,10 +41,7 @@
     <script type="text/javascript">
         /* Subscribe to a subset of the available TaskRouter.js events for a worker */
         var ReservationObject;
-        var $chatWindow = $('#messages');
-        var chatClient;
-        var generalChannel;
-        var username;
+
 
         function registerTaskRouterCallbacks() {
             worker.on('ready', function (worker) {
@@ -156,7 +153,7 @@
 
     // The server will assign the client a random username - store that value
     // here
-    var username;
+    var username = worker.friendlyName;
 
     // Helper function to print info messages to the chat window
     function print(infoMessage, asHtml) {
@@ -193,14 +190,17 @@
     // Get an access token for the current user, passing a username (identity)
     // and a device ID - for browser-based apps, we'll always just use the
     // value "browser"
+
+
     $.getJSON('/token', {
+        identity: ReservationObject.workerName,
         device: 'browser'
     }, function(data) {
+
+
         // Alert the user they have been assigned a random username
         username = data.identity;
-        print('You have been assigned a random username of: '
-            + '<span class="me">' + username + '</span>', true);
-
+        console.log(ReservationObject);
         // Initialize the Chat client
         chatClient = new Twilio.Chat.Client(data.token);
         chatClient.getSubscribedChannels().then(createOrJoinGeneralChannel);
@@ -214,7 +214,6 @@
         var promise = chatClient.getChannelBySid(ReservationObject.task.attributes.channel);
         promise.then(function(channel) {
             generalChannel = channel;
-           logger('Found general channel:');
             console.log(generalChannel);
             setupChannel();
         }).catch(function() {

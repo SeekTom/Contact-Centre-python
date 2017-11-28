@@ -345,7 +345,7 @@ def chat():
 
     return render_template('chat.html')
 
-@app.route('/createChatTask/', methods=['POST'])
+@app.route('/createChatTask/', methods=['POST', 'GET'])
 def createChatTask():
 
 
@@ -389,15 +389,16 @@ def config():
 
 @app.route('/token', methods=['GET'])
 def randomToken():
-    return generateToken(fake.user_name())
+    username = request.values.get("identity")
+    return generateToken(username)
 
 
 @app.route('/token', methods=['POST'])
-def createToken():
+def createToken(username):
     # Get the request json or form data
     content = request.get_json() or request.form
     # get the identity from the request, or make one up
-    identity = content.get('identity', fake.user_name())
+    identity = content.get('identity', username)
     return generateToken(identity)
 
 @app.route('/token/<identity>', methods=['POST', 'GET'])
