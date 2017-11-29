@@ -49,40 +49,67 @@ $(function() {
     }, function(data) {
         // Alert the user they have been assigned a random username
         username = 'customer'
-        print('You have been assigned a random username of: '
-            + '<span class="me">' + username + '</span>', true);
+        //print('You have been assigned a random username of: '
+          //  + '<span class="me">' + username + '</span>', true);
 
         // Initialize the Chat client
         chatClient = new Twilio.Chat.Client(data.token);
         chatClient.getSubscribedChannels().then(createOrJoinGeneralChannel);
+        //chatClient.getSubscribedChannels().then(createChannel());
+
     });
+
+   /* function createChannel(){
+
+        var taskSid = $.post("/createChatTask/");
+        console.log(taskSid);
+
+        chatClient
+          .createChannel({
+            uniqueName: taskSid,
+            friendlyName: 'Customer request ' + taskSid,
+          })
+          .then(function(channel) {
+            console.log('Created general channel:');
+            console.log(channel);
+          });
+
+    }*/
+
 
     function createOrJoinGeneralChannel() {
         // Get the general chat channel, which is where all the messages are
         // sent in this simple application
-        print('Attempting to join "general" chat channel...');
-        var promise = chatClient.getChannelByUniqueName('general');
-        promise.then(function(channel) {
-            generalChannel = channel;
-            console.log('Found general channel:');
-            console.log(generalChannel);
 
-            setupChannel();
-        }).catch(function() {
-            // If it doesn't exist, let's create it
-            console.log('Creating general channel');
-            chatClient.createChannel({
-                uniqueName: 'general',
-                friendlyName: 'General Chat Channel'
-            }).then(function(channel) {
-                console.log('Created general channel:');
-                console.log(channel);
-                generalChannel = channel;
-                setupChannel();
+        $.get( "/createChatTask/", function( data ) {
+            alert( "Data Loaded: " + data.TaskSid );
+            var taskSid =  data.TaskSid
+            print('Attempting to join ' + taskSid + ' chat channel...');
+                var promise = chatClient.getChannelByUniqueName(data.TaskSid);
+                promise.then(function(channel) {
+                    generalChannel = channel;
+                    console.log('Found ' + taskSid + ' channel:');
+                    console.log(generalChannel);
 
+                    setupChannel();
+                }).catch(function() {
+                    // If it doesn't exist, let's create it
+                    console.log('Creating general channel');
+                    chatClient.createChannel({
+                        uniqueName: taskSid,
+                        friendlyName: 'Customer request ' + taskSid,
+                    }).then(function(channel) {
+                        console.log('Created +' + taskSid + +' channel:');
+                        console.log(channel);
+                        generalChannel = channel;
+                        setupChannel();
+
+
+                    });
+                });
 
             });
-        });
+
     }
 
     // Set up channel after it has been found
@@ -91,10 +118,10 @@ $(function() {
 
         generalChannel.join().then(function(channel) {
             print('Joined channel as '
-                + '<span class="me">' + username + ', please wait for an agent.</span>.', true);
-              $.post("/createChatTask/", {
-                channel_ID: channel.sid,
-            });
+                + '<span class="me">Welcome ' + username + ', please wait for an agent to join you.</span>.', true);
+            //  $.post("/createChatTask/", {
+              //  channel_ID: channel.sid,
+            //});
 
         });
 

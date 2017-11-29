@@ -345,17 +345,23 @@ def chat():
 
     return render_template('chat.html')
 
+@app.route('/createCustomerChannel', methods=['POST, GET'])
+def createCustomerChannel():
+
+    channel = request.values.get('taskSid')
+
+    return channel
+
+
 @app.route('/createChatTask/', methods=['POST', 'GET'])
 def createChatTask():
 
-
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid="WW5bc2a216556a9cc2e8d4b8507e8fc502",
-                attributes='{"selected_product":"chat", "channel":"' + request.values.get(
-                    'channel_ID') + '"}')
+        .create(workflow_sid="WW5bc2a216556a9cc2e8d4b8507e8fc502", task_channel="chat",
+                attributes='{"selected_product":"chat"}')
 
-    resp = VoiceResponse
-    return Response(str(resp), mimetype='text/xml')
+    task_sid = {"TaskSid": task.sid}
+    return jsonify(task_sid)
 
 
 @app.route('/agent_chat')
@@ -413,7 +419,6 @@ def generateToken(identity):
     if chat_service:
         chat_grant = ChatGrant(service_sid=chat_service)
         token.add_grant(chat_grant)
-    print(api_secret)
     # Return token info as JSON
     return jsonify(identity=identity, token=token.to_jwt().decode('utf-8'))
 
