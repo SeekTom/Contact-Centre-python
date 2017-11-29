@@ -358,8 +358,7 @@ def createChatTask():
 
     task = client.taskrouter.workspaces(workspace_sid).tasks \
         .create(workflow_sid="WW5bc2a216556a9cc2e8d4b8507e8fc502", task_channel="chat",
-                attributes='{"selected_product":"chat"}')
-
+                attributes='{"selected_product":"chat", "channel":"'+ request.values.get("channel") +'"}')
     task_sid = {"TaskSid": task.sid}
     return jsonify(task_sid)
 

@@ -13,6 +13,9 @@ $(function() {
     // here
     var username;
 
+    function getRandomArbitrary(min, max) {
+        return Math.random() * (max - min) + min;
+    }
     // Helper function to print info messages to the chat window
     function print(infoMessage, asHtml) {
         var $msg = $('<div class="info">');
@@ -55,40 +58,20 @@ $(function() {
         // Initialize the Chat client
         chatClient = new Twilio.Chat.Client(data.token);
         chatClient.getSubscribedChannels().then(createOrJoinGeneralChannel);
-        //chatClient.getSubscribedChannels().then(createChannel());
 
     });
 
-   /* function createChannel(){
-
-        var taskSid = $.post("/createChatTask/");
-        console.log(taskSid);
-
-        chatClient
-          .createChannel({
-            uniqueName: taskSid,
-            friendlyName: 'Customer request ' + taskSid,
-          })
-          .then(function(channel) {
-            console.log('Created general channel:');
-            console.log(channel);
-          });
-
-    }*/
-
 
     function createOrJoinGeneralChannel() {
-        // Get the general chat channel, which is where all the messages are
-        // sent in this simple application
-
-        $.get( "/createChatTask/", function( data ) {
-            alert( "Data Loaded: " + data.TaskSid );
-            var taskSid =  data.TaskSid
-            print('Attempting to join ' + taskSid + ' chat channel...');
-                var promise = chatClient.getChannelByUniqueName(data.TaskSid);
+         //     $.get( "/createChatTask/", function( data ) {
+           // alert( "Data Loaded: " + data.TaskSid );
+            //var taskSid =  data.TaskSid
+           var channelName = getRandomArbitrary(0,10000000);
+           print('Attempting to join ' + channelName + ' chat channel...');
+                var promise = chatClient.getChannelByUniqueName(channelName);
                 promise.then(function(channel) {
                     generalChannel = channel;
-                    console.log('Found ' + taskSid + ' channel:');
+                    console.log('Found ' + channel.friendlyName + ' channel:');
                     console.log(generalChannel);
 
                     setupChannel();
@@ -96,10 +79,10 @@ $(function() {
                     // If it doesn't exist, let's create it
                     console.log('Creating general channel');
                     chatClient.createChannel({
-                        uniqueName: taskSid,
-                        friendlyName: 'Customer request ' + taskSid,
+                        uniqueName: channelName,
+                        friendlyName: 'Customer request ' + channelName,
                     }).then(function(channel) {
-                        console.log('Created +' + taskSid + +' channel:');
+                        console.log('Created +' + channelName + +' channel:');
                         console.log(channel);
                         generalChannel = channel;
                         setupChannel();
@@ -108,7 +91,7 @@ $(function() {
                     });
                 });
 
-            });
+           // });
 
     }
 
@@ -119,9 +102,9 @@ $(function() {
         generalChannel.join().then(function(channel) {
             print('Joined channel as '
                 + '<span class="me">Welcome ' + username + ', please wait for an agent to join you.</span>.', true);
-            //  $.post("/createChatTask/", {
-              //  channel_ID: channel.sid,
-            //});
+              $.post("/createChatTask/", {
+                channel: channel.sid,
+            });
 
         });
 

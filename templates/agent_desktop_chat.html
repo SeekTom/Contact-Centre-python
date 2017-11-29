@@ -209,31 +209,9 @@
 
 
     function createOrJoinGeneralChannel() {
-        // Get the general chat channel, which is where all the messages are
-        // sent in this simple application
-      /* logger('Attempting to join customer chat channel'+ ReservationObject.taskSid + '...');
-        var promise = chatClient.getChannelBySid(ReservationObject.taskSid);
-        promise.then(function(channel) {
-            generalChannel = channel;
-            console.log(generalChannel);
-            setupChannel();
-        }).catch(function() {
-            // If it doesn't exist, let's create it
-            logger('Creating general channel');
-            chatClient.createChannel({
-                uniqueName: 'general',
-                friendlyName: 'General Chat Channel'
-            }).then(function(channel) {
-                logger('Created general channel:');
-                logger(channel);
-                generalChannel = channel;
-                setupChannel();
-            });
-        });*/
 
-      logger('Attempting to join customer chat channel...');
-        var promise = chatClient.getChannelBySid(ReservationObject.taskSid);
-        console.log(ReservationObject.taskSid)
+        logger('Attempting to join customer chat channel...');
+        var promise = chatClient.getChannelBySid(ReservationObject.task.attributes.channel);
         promise.then(function(channel) {
             generalChannel = channel;
             console.log(generalChannel);
