@@ -6,12 +6,10 @@ from twilio.twiml.messaging_response import Message, MessagingResponse
 from twilio.jwt.client import ClientCapabilityToken
 from twilio.jwt.access_token import AccessToken
 from twilio.jwt.access_token.grants import (ChatGrant)
-from faker import Faker, Factory
 
 import os
 
 app = Flask(__name__, static_folder='app/static')
-fake = Factory.create()
 
 # Your Account Sid and Auth Token from twilio.com/user/account
 account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
@@ -211,12 +209,25 @@ def generate_agent_list_view():
 
     workers = client.taskrouter.workspaces(workspace_sid).workers.list()
     worker_list = []
+    worker_chat = []
+
+    expression = "skills HAS 'chat'"
+
+    chat_workers = client.taskrouter.workspaces(workspace_sid) \
+        .workers.list(target_workers_expression=expression)
+
+    for c_worker in chat_workers:
+        worker_chat.append(c_worker.sid)
+        worker_chat.append(c_worker.friendly_name)
 
     for worker in workers:
         worker_list.append(worker.sid)
         worker_list.append(worker.friendly_name)
 
-    return render_template('agent_list.html', workers=worker_list)
+    for cheese in worker_chat:
+        print(cheese)
+
+    return render_template('agent_list.html', workers=worker_list, chatworkers = chat_workers)
 
 
 @app.route("/agents", methods=['GET'])

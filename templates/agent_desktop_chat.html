@@ -23,6 +23,7 @@
   width:800px;
   margin:0 auto;
   overflow-y:auto;
+  text-align:left;
 }
         .me, .username.me {
   font-weight:bold;
@@ -32,6 +33,7 @@
 .message-container .username.me {
   display:inline-block;
   margin-right:5px;
+
 }
     </style>
     <script type="text/javascript" src="//media.twiliocdn.com/taskrouter/js/v1.9.4/taskrouter.min.js"></script>
@@ -235,15 +237,19 @@
     function setupChannel() {
         // Join the general channel
         generalChannel.join().then(function(channel) {
-            print('Joined channel as '
-                + '<span class="me">' + username + '</span>.', true);
+            print('<span>Joined customer chat</span>', true);
+            generalChannel.sendMessage("Thank you for contacting OwlCorp today my name is " + ReservationObject.workerName + " how can I help you today?");
         });
 
         // Listen for new messages sent to the channel
         generalChannel.on('messageAdded', function(message) {
             printMessage(message.author, message.body);
         });
+
     }
+
+
+
 
     // Send a new message to the general channel
     var $input = $('#chat-input');
@@ -251,14 +257,19 @@
         if (e.keyCode == 13 && generalChannel) {
             generalChannel.sendMessage($input.val())
             $input.val('');
+        }else {
+    // else send the Typing Indicator signal
+            generalChannel.typing();
         }
     });
+
 
         }
 
         function completeReservation(){
-            ReservationObject.task.complete();
             logger('chat complete!')
+            ReservationObject.task.complete();
+
 
         }
 

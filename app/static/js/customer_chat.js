@@ -41,7 +41,7 @@ $(function() {
     }
 
     // Alert the user they have been assigned a random username
-    print('Logging in...');
+    //print('Logging in...');
 
     // Get an access token for the current user, passing a username (identity)
     // and a device ID - for browser-based apps, we'll always just use the 
@@ -67,7 +67,7 @@ $(function() {
            // alert( "Data Loaded: " + data.TaskSid );
             //var taskSid =  data.TaskSid
            var channelName = getRandomArbitrary(0,10000000);
-           print('Attempting to join ' + channelName + ' chat channel...');
+           print('Setting up  ' + channelName + ' chat channel...');
                 var promise = chatClient.getChannelByUniqueName(channelName);
                 promise.then(function(channel) {
                     generalChannel = channel;
@@ -100,21 +100,19 @@ $(function() {
         // Join the general channel
 
         generalChannel.join().then(function(channel) {
-            print('Joined channel as '
-                + '<span class="me">Welcome ' + username + ', please wait for an agent to join you.</span>.', true);
+            print('<span class="me">Welcome ' + username + ', please wait for an agent to join you.</span>.', true);
               $.post("/createChatTask/", {
                 channel: channel.sid,
             });
 
         });
-
-
-
-        // Listen for new messages sent to the channel
+        
+          // Listen for new messages sent to the channel
         generalChannel.on('messageAdded', function(message) {
             printMessage(message.author, message.body);
         });
     }
+
 
     // Send a new message to the general channel
     var $input = $('#chat-input');
@@ -122,6 +120,9 @@ $(function() {
         if (e.keyCode == 13 && generalChannel) {
             generalChannel.sendMessage($input.val())
             $input.val('');
+        }else {
+    // else send the Typing Indicator signal
+            generalChannel.typing();
         }
     });
 });
