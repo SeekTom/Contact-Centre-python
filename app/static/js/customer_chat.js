@@ -47,11 +47,11 @@ $(function() {
     // and a device ID - for browser-based apps, we'll always just use the 
     // value "browser"
     $.getJSON('/token', {
-        identity: 'customer',
+        identity: 'Customer',
         device: 'browser'
     }, function(data) {
         // Alert the user they have been assigned a random username
-        username = 'customer'
+        username = 'Customer'
         //print('You have been assigned a random username of: '
           //  + '<span class="me">' + username + '</span>', true);
 
@@ -106,7 +106,7 @@ $(function() {
             });
 
         });
-        
+
           // Listen for new messages sent to the channel
         generalChannel.on('messageAdded', function(message) {
             printMessage(message.author, message.body);
