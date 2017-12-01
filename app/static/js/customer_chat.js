@@ -111,18 +111,34 @@ $(function() {
         generalChannel.on('messageAdded', function(message) {
             printMessage(message.author, message.body);
         });
+
+        generalChannel.on('typingStarted', function (member) {
+           console.log("sponge!");
+            printMessage( member.identity + ' is typing');
+
+            });
+
+        generalChannel.on('typingEnded', function (member) {
+
+                  printMessage(member.identity + ' has stopped typing');
+        });
     }
 
 
-    // Send a new message to the general channel
-    var $input = $('#chat-input');
-    $input.on('keydown', function(e) {
-        if (e.keyCode == 13 && generalChannel) {
-            generalChannel.sendMessage($input.val())
-            $input.val('');
-        }else {
-    // else send the Typing Indicator signal
-            generalChannel.typing();
-        }
-    });
+
+            // Send a new message to the general channel
+                var $input = $('#chat-input');
+                $input.on('keydown', function(e) {
+                    if (e.keyCode == 13 && generalChannel) {
+                        generalChannel.sendMessage($input.val())
+                        $input.val('');
+                        console.log("input");
+                    }
+                    else {
+                // else send the Typing Indicator signal
+
+                        generalChannel.typing();
+                    }
+                });
+
 });
