@@ -97,7 +97,7 @@ def choose_dept():
           2: "en",
           3: "fr"
         }
-        dept_lang = switcher.get(choice
+        dept_lang = switcher.get(choice)
         resp.redirect("/dept?lang="+dept_lang+"&digit="+str(choice))
         return str(resp)
 
