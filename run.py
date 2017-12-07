@@ -98,41 +98,41 @@ def choose_dept():
           2: "en",
           3: "fr"
         }
-        resp.redirect("/dept?lang="+switcher.get(choice))
+        resp.redirect("/dept?lang="+switcher.get(choice)+"&digit="+choice)
         return str(resp)
 
 
 # Select department
 
-@app.route("/dept/es", methods=["GET", "POST"])
-def es_dept():
+@app.route("/dept", methods=["GET", "POST"])
+def dept():
     resp = VoiceResponse()
     with resp.gather(num_digits="1", action="/enqueue_call_es", timeout="10") as g:
-        g.say("Para sales oprime uno", language='es')
-        g.say("Para support oprime duo", language='es')
-        g.say("para billing oprime tres", language='es')
+        g.say("Para sales oprime uno", language=dept_lang)
+        g.say("Para support oprime duo", language=dept_lang)
+        g.say("para billing oprime tres", language=dept_lang)
     return str(resp)
 
 
-@app.route("/dept/en", methods=["GET", "POST"])
-def en_dept():
-    resp = VoiceResponse()
-    with resp.gather(num_digits="1", action="/enqueue_call_en", timeout="10") as g:
-        g.say("For Sales press one", language='en')
-        g.say("For Support press two", language='en')
-        g.say("For Billing press three", language='en')
-    return str(resp)
+# @app.route("/dept/en", methods=["GET", "POST"])
+# def en_dept():
+#     resp = VoiceResponse()
+#     with resp.gather(num_digits="1", action="/enqueue_call_en", timeout="10") as g:
+#         g.say("For Sales press one", language='en')
+#         g.say("For Support press two", language='en')
+#         g.say("For Billing press three", language='en')
+#     return str(resp)
 
 
-@app.route("/dept/fr", methods=["GET", "POST"])
-def fr_dept():
-    resp = VoiceResponse()
+# @app.route("/dept/fr", methods=["GET", "POST"])
+# def fr_dept():
+#     resp = VoiceResponse()
 
-    with resp.gather(num_digits="1", action="/enqueue_call_fr", timeout="10") as g:
-        g.say("Pour sales pressé un", language='fr')
-        g.say("Pour support pressé deux", language='fr')
-        g.say("Pour billing pressé tres", language='fr')
-    return str(resp)
+#     with resp.gather(num_digits="1", action="/enqueue_call_fr", timeout="10") as g:
+#         g.say("Pour sales pressé un", language='fr')
+#         g.say("Pour support pressé deux", language='fr')
+#         g.say("Pour billing pressé tres", language='fr')
+#     return str(resp)
 
 
 # Enqueue calls to tasks based on language
