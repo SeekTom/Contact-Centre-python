@@ -94,11 +94,11 @@ def choose_dept():
         # Get which digit the caller chose
         choice = int(request.values['Digits'])
         switcher = {
-          1: "/dept/es",
-          2: "/dept/en",
-          3: "/dept/fr"
+          1: "es",
+          2: "en",
+          3: "fr"
         }
-        resp.redirect(switcher.get(choice))
+        resp.redirect("/dept?lang="+switcher.get(choice))
         return str(resp)
 
 
