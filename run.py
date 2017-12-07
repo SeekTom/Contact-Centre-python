@@ -92,18 +92,14 @@ def choose_dept():
 
     if 'Digits' in request.values:
         # Get which digit the caller chose
-        choice = request.values['Digits']
-        if choice == "1":
-            resp.redirect("/dept/es")
-            return str(resp)
-
-        if choice == "2":
-            resp.redirect("/dept/en")
-            return str(resp)
-
-        if choice == "3":
-            resp.redirect("/dept/fr")
-            return str(resp)
+        choice = int(request.values['Digits'])
+        switcher = {
+          1: "/dept/es",
+          2: "/dept/en",
+          3: "/dept/fr"
+        }
+        resp.redirect(switcher.get(choice))
+        return str(resp)
 
 
 # Select department
