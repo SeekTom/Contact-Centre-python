@@ -89,7 +89,6 @@ def incoming_call():
 @app.route("/incoming_call/department", methods=['POST', 'GET'])
 def choose_dept():
     resp = VoiceResponse()
-
     if 'Digits' in request.values:
         # Get which digit the caller chose
         choice = int(request.values['Digits'])
