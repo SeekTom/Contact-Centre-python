@@ -114,63 +114,29 @@ def dept():
       'en': ["For Sales press one", "For Support press two", "For Billing press three"],
       'fr': ["Pour sales pressé un", "Pour support pressé deux", "Pour billing pressé tres"]
     }
-    with resp.gather(num_digits=digit, action="/enqueue_call_"+dept_lang, timeout="10") as g:
+    with resp.gather(num_digits=digit, action="/enqueue_call?lang="+dept_lang, timeout="10") as g:
         g.say(say_dict.get(dept_lang)[0], language=dept_lang)
         g.say(say_dict.get(dept_lang)[1], language=dept_lang)
         g.say(say_dict.get(dept_lang)[2], language=dept_lang)
     return str(resp)
 
 # Enqueue calls to tasks based on language
-#Consider refactoring into single function
+#Consider refactoring into single function - DONE
 
-@app.route("/enqueue_call_es", methods=["GET", "POST"])
-def enqueue_call_es():
+@app.route("/enqueue_call", methods=["GET", "POST"])
+def enqueue_call():
     if 'Digits' in request.values:
         digit_pressed = request.values['Digits']
         workflow_d = return_work_space(digit_pressed) #array of workspace and product
         resp = VoiceResponse()
-
+        select_lang = request.values['lang']
         with resp.enqueue(None, workflow_Sid=workflow_d[0]) as e:
-            e.task('{"selected_language" : "es", "selected_product" : "' + workflow_d[1] + '"}')
+            e.task('{"selected_language" : "'+select_lang+'", "selected_product" : "' + workflow_d[1] + '"}')
         return Response(str(resp), mimetype='text/xml')
     else:
         resp = VoiceResponse()
         resp.say("no digits detected") #tell user something is amiss
         resp.redirect("/incoming_call")  #redirect back to initial step
-    return Response(str(resp), mimetype='text/xml')
-
-
-@app.route("/enqueue_call_en", methods=["GET", "POST"])
-def enqueue_call_en():
-    if 'Digits' in request.values:
-        digit_pressed = request.values['Digits']
-        workflow_d = return_work_space(digit_pressed) #array of workspace and product
-        resp = VoiceResponse()
-
-        with resp.enqueue(None, workflow_Sid=workflow_d[0]) as e:
-            e.task('{"selected_language" : "en", "selected_product" : "' + workflow_d[1] + '"}')
-        return Response(str(resp), mimetype='text/xml')
-    else:
-        resp = VoiceResponse()
-        resp.say("no digits detected")
-        resp.redirect("/incoming_call")  # redirect back to initial step
-    return Response(str(resp), mimetype='text/xml')
-
-
-@app.route("/enqueue_call_fr", methods=["GET", "POST"])
-def enqueue_call_fr():
-    if 'Digits' in request.values:
-        digit_pressed = request.values['Digits']
-        workflow_d = return_work_space(digit_pressed) #array of workspace and product
-        resp = VoiceResponse()
-
-        with resp.enqueue(None, workflow_Sid=workflow_d[0]) as e:
-            e.task('{"selected_language" : "fr", "selected_product" : "' + workflow_d[1] + '"}')
-        return Response(str(resp), mimetype='text/xml')
-    else:
-        resp = VoiceResponse()
-        resp.say("no digits detected")
-        resp.redirect("/incoming_call")  # redirect back to initial step
     return Response(str(resp), mimetype='text/xml')
 
 
