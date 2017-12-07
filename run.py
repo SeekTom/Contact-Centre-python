@@ -107,8 +107,8 @@ def choose_dept():
 @app.route("/dept", methods=["GET", "POST"])
 def dept():
     resp = VoiceResponse()
-    dept_lang = request.args.get('lang')
-    digit = request.args.get('digit')
+    dept_lang = request.values['lang']
+    digit = request.values['digit']
     with resp.gather(num_digits=digit, action="/enqueue_call_es", timeout="10") as g:
         g.say("Para sales oprime uno", language=dept_lang)
         g.say("Para support oprime duo", language=dept_lang)
