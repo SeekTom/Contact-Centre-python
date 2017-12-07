@@ -98,7 +98,7 @@ def choose_dept():
           2: "en",
           3: "fr"
         }
-        resp.redirect("/dept?lang%3D"+switcher.get(choice)+"%26digit%3D"+str(choice))
+        resp.redirect("/dept?lang="+switcher.get(choice)+"&digit="+str(choice)
         return str(resp)
 
 
@@ -107,7 +107,9 @@ def choose_dept():
 @app.route("/dept", methods=["GET", "POST"])
 def dept():
     resp = VoiceResponse()
-    with resp.gather(num_digits="1", action="/enqueue_call_es", timeout="10") as g:
+    dept_lang = request.args.get('lang')
+    digit = request.args.get('digit')
+    with resp.gather(num_digits=digit, action="/enqueue_call_es", timeout="10") as g:
         g.say("Para sales oprime uno", language=dept_lang)
         g.say("Para support oprime duo", language=dept_lang)
         g.say("para billing oprime tres", language=dept_lang)
