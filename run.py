@@ -114,7 +114,6 @@ def dept():
       'en': ["For Sales press one", "For Support press two", "For Billing press three"],
       'fr': ["Pour sales pressé un", "Pour support pressé deux", "Pour billing pressé tres"]
     }
-    print say_dict.get
     with resp.gather(num_digits=digit, action="/enqueue_call_es", timeout="10") as g:
         g.say(say_dict.get(dept_lang)[0], language=dept_lang)
         g.say(say_dict.get(dept_lang)[1], language=dept_lang)
