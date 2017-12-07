@@ -114,33 +114,11 @@ def dept():
       'en': ["For Sales press one", "For Support press two", "For Billing press three"],
       'fr': ["Pour sales pressé un", "Pour support pressé deux", "Pour billing pressé tres"]
     }
-    with resp.gather(num_digits=digit, action="/enqueue_call_es", timeout="10") as g:
+    with resp.gather(num_digits=digit, action="/enqueue_call_"+dept_lang, timeout="10") as g:
         g.say(say_dict.get(dept_lang)[0], language=dept_lang)
         g.say(say_dict.get(dept_lang)[1], language=dept_lang)
         g.say(say_dict.get(dept_lang)[2], language=dept_lang)
     return str(resp)
-
-
-# @app.route("/dept/en", methods=["GET", "POST"])
-# def en_dept():
-#     resp = VoiceResponse()
-#     with resp.gather(num_digits="1", action="/enqueue_call_en", timeout="10") as g:
-#         g.say("For Sales press one", language='en')
-#         g.say("For Support press two", language='en')
-#         g.say("For Billing press three", language='en')
-#     return str(resp)
-
-
-# @app.route("/dept/fr", methods=["GET", "POST"])
-# def fr_dept():
-#     resp = VoiceResponse()
-
-#     with resp.gather(num_digits="1", action="/enqueue_call_fr", timeout="10") as g:
-#         g.say("Pour sales pressé un", language='fr')
-#         g.say("Pour support pressé deux", language='fr')
-#         g.say("Pour billing pressé tres", language='fr')
-#     return str(resp)
-
 
 # Enqueue calls to tasks based on language
 #Consider refactoring into single function
