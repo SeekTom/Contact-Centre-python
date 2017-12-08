@@ -13,6 +13,7 @@ $(function() {
     // here
     var username;
 
+
     function getRandomArbitrary(min, max) {
         return Math.random() * (max - min) + min;
     }
@@ -48,7 +49,8 @@ $(function() {
     // value "browser"
     $.getJSON('/token', {
         identity: 'Customer',
-        device: 'browser'
+        device: 'browser',
+        logLevel: 'debug'
     }, function(data) {
         // Alert the user they have been assigned a random username
         username = 'Customer'
@@ -60,14 +62,9 @@ $(function() {
         chatClient.getSubscribedChannels().then(createOrJoinGeneralChannel);
 
     });
-
-
     function createOrJoinGeneralChannel() {
-         //     $.get( "/createChatTask/", function( data ) {
-           // alert( "Data Loaded: " + data.TaskSid );
-            //var taskSid =  data.TaskSid
-           var channelName = getRandomArbitrary(0,10000000);
-           print('Setting up  ' + channelName + ' chat channel...');
+              var channelName = getRandomArbitrary(0,10000000);
+       //    print('Setting up  ' + channelName + ' chat channel...');
                 var promise = chatClient.getChannelByUniqueName(channelName);
                 promise.then(function(channel) {
                     generalChannel = channel;
@@ -113,19 +110,18 @@ $(function() {
         });
 
         generalChannel.on('typingStarted', function (member) {
-           console.log("sponge!");
-            printMessage( member.identity + ' is typing');
+            document.getElementById("typing").innerText =  member.identity + " is typing";
 
             });
 
         generalChannel.on('typingEnded', function (member) {
 
-                  printMessage(member.identity + ' has stopped typing');
+          document.getElementById("typing").innerText =  member.identity + " stopped typing";
+
+          //  printMessage(member.identity + ' has stopped typing');
+             console.log(" no sponge");
         });
     }
-
-
-
             // Send a new message to the general channel
                 var $input = $('#chat-input');
                 $input.on('keydown', function(e) {
@@ -140,5 +136,5 @@ $(function() {
                         generalChannel.typing();
                     }
                 });
-
 });
+

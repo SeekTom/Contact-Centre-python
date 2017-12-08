@@ -6,7 +6,8 @@ Languages: Python, js
 
 This implements:
 
-- 4 channel, multilingual contact centre
+- Two channels (Voice & Programmable Chat)
+- 4 department, multilingual contact centre
 - Agent UI based on TaskRouter SDK for low latency
 - Twilio Client WebRTC dashboard
 - Conference instruction
@@ -14,6 +15,8 @@ This implements:
 - Conference recording
 - Call holding
 - Call transfers
+- Programmable Chat
+- Multitasking
 
 You will need to add in your own:
 

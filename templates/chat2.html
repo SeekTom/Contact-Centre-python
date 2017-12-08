@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
+ <!--   <link rel="stylesheet" type="text/css" href=style.css> -->
+        <!-- Twilio UI library -->
+           <script src="https://media.twiliocdn.com/sdk/js/frame-chat/releases/0.3.1/twilio-frame-chat.bundle.min.js"></script>
+        <script src="https://media.twiliocdn.com/sdk/js/common/v0.1/twilio-common.min.js"></script><!-- app.js depenencies -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.1/axios.min.js"></script>
+        <script src="https://code.jquery.com/jquery-2.1.4.js"></script>
+        <!-- Twilio common. Used by app.js for token expiration handling -->
+       <script src="https://media.twiliocdn.com/sdk/js/common/v0.1/twilio-common.min.js"></script><!-- app.js depenencies -->
+
+        <!-- Twilio Chat SDK -->
+              <script src="https://media.twiliocdn.com/sdk/js/chat/v1.0/twilio-chat.js"></script>
+        <!-- Default UI component stylesheet
+        <link rel="stylesheet" type="text/css" href="https://stark-plateau-44198.herokuapp.com/assets/resources/style/twilio-style.css"> -->
+  </head>
+  <body>
+<!-- app styles  border-radius: 5px 5px 0 0;-->
+<style type='text/css'>
+.chat {
+
+  background: #ddd;
+  padding: 0px;
+  width: 300px;
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  color: #888;
+  height: 400px;
+  display:none;
+  box-shadow: 2px 2px 3px #999;
+}
+
+*{padding:0;margin:0;}
+
+body{
+  font-family:Verdana, Geneva, sans-serif;
+  font-size:18px;
+  background-color:#CCC;
+}
+
+.float{
+  position:fixed;
+  width:60px;
+  height:60px;
+  bottom:40px;
+  right:40px;
+  background-color:#00558a;
+  color:#FFF;
+  border-radius:50px;
+  text-align:center;
+  box-shadow: 2px 2px 3px #999;
+}
+
+.my-float{
+  margin-top:22px;
+}
+</style>
+
+<!-- Entrypoint-->
+<a href="#" class="float" id="login-button">
+<i class="fa fa-plus my-float"></i>
+</a>
+
+<!-- Show conteiner with chat component -->
+<div class="chat" id="chatAppContainer">
+</div>
+
+<script>
+
+$('#login-button').on('click', function() {
+  login(); $( "#chatAppContainer" ).fadeIn( "slow") })
+
+async function login() {
+
+    //get auth token
+    var fetchToken = function() {
+         let url = "https://minor-thrill-4971.twil.io/token";
+         //var result = axios.get(url);
+         var result = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiIsImN0eSI6InR3aWxpby1mcGE7dj0xIn0.eyJqdGkiOiJTS2E3OGQ5M2RiNWRiMmU0MDBhODhkOGNiNmVlNWIxZDA2LTE1MTI2NDY5NDkiLCJpc3MiOiJTS2E3OGQ5M2RiNWRiMmU0MDBhODhkOGNiNmVlNWIxZDA2Iiwic3ViIjoiQUM1MDhhNGVlODRmNDA0YWEyNmU0ZTViMWM3MmIwNjRmMSIsImV4cCI6MTUxMjY1MDU0OSwiZ3JhbnRzIjp7ImlkZW50aXR5IjoidXNlciIsImlwX21lc3NhZ2luZyI6eyJzZXJ2aWNlX3NpZCI6IklTZWRhMmUyZmZlZGRmNGFmOGJkODFjOWY0MTU1OTRhYjEiLCJlbmRwb2ludF9pZCI6ImlwLW1lc3NhZ2luZy1kZW1vOnVzZXI6ZGVtby1kZXZpY2UifX19.hC1IwYg2jwxeukjHnc_qKm-iwWwnukzQw0Sr0EFkUEM";
+        return result;
+    }
+
+    function generateChannelId(){
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for( var i=0; i < 16; i++ )
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
+    }
+    // get channel
+    var channelName = "channelName101";
+    var token = fetchToken();
+    //console.log(tokenAnswer);
+    //var token = tokenAnswer.data;
+
+
+    // initialize Chat Client with token
+    let client = await Twilio.Chat.Client.create(token);
+    await client.initialize();
+
+    // access manager for token expiration
+    accessManager = new Twilio.AccessManager(token);
+    accessManager.on('tokenUpdated', am => client.updateToken(am.token));
+    accessManager.on('tokenExpired', async () => {
+          token = fetchToken();
+          token = token.data;
+          accessManager.updateToken(token);
+        });
+
+  // chat UI component configuration
+  var configuration = {
+    "language": "en-US",
+    "channel": {
+        "windowControls": {
+            "visible": false
+        },
+        "header": {
+            "visible": true,
+            "image": {
+                "visible": true,
+                "url": "https://www.twilio.com/marketing/bundles/company-brand/img/logos/red/twilio-mark-red.svg"
+            },
+            "title": {
+                "visible": true,
+                "default": "Twilio Frame"
+            }
+        },
+        "message": {
+            "yourDefaultName": "",
+            "theirDefaultName": "",
+            "yourFriendlyNameOverride": true,
+            "theirFriendlyNameOverride": true,
+            "showReadStatus": true
+        },
+        "visual": {
+            "colorTheme": "MediumTheme",
+            "messageStyle": "Rounded",
+            "inputAreaStyle": "Bubble",
+            "override": {
+                "main": {
+                    "background": "#E6E7E9"
+                },
+                "sendButton": {
+                    "background": "#F22F46",
+                    "color": "white"
+                },
+                "outgoingMessage": {
+                    "body": {
+                        "background": "#565B73",
+                        "color": "White"
+                    },
+                    "info": {
+                        "color": "White"
+                    }
+                }
+            }
+        },
+        "returnKeySendsMessage": true
+    }
+};
+
+
+    // initialize Chat UI component with channel and configuration
+var doDatThing = async(channel) => {
+	var chatFrame = Twilio.Frame.createChat(client);
+  //var clientUI = new TwilioUI.ChatUI(client);
+        if (channel.status == 'joined') {
+            chatFrame.loadChannel( "#chatAppContainer", channel, configuration);
+        }
+        else {
+            let sid = channel.sid;
+            client.addListener('channelJoined', (ch) => {
+                if (ch.sid == sid) {
+                    chatFrame.loadChannel( "#chatAppContainer", channel, configuration);
+                }
+            });
+            await channel.join();
+        }
+    };
+    await client.user.updateFriendlyName("You");
+
+    client.getChannelByUniqueName(channelName).then(async(channel) => {
+        await doDatThing(channel);
+    }, (error) => {
+        var options = {
+            uniqueName: channelName,
+            isPrivate: false
+        };
+        client.createChannel(options).then(async(channel) => {
+            await doDatThing(channel);
+        });
+    });
+  }
+</script>
+</body>
+</html>

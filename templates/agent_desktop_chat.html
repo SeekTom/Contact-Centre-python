@@ -3,67 +3,8 @@
 <head>
     <title>Customer Care - Voice Agent Screen</title>
     <link rel="stylesheet" href="//media.twiliocdn.com/taskrouter/quickstart/agent.css"/>
-    <style>
-        section input {
-  display:block;
-  height:52px;
-  width:800px;
-  margin:10px auto;
-  outline:none;
-  background-color:transparent;
-  border:none;
-  border-bottom:1px solid #2B2B2A;
-  padding:0;
-  font-size:42px;
-  color:#eee;
-}
-        #messages {
-  padding:10px;
-  height:100%;
-  width:800px;
-  margin:0 auto;
-  overflow-y:auto;
-  text-align:left;
-}
-        .me, .username.me {
-  font-weight:bold;
-  color:Black;
-}
+    <link rel="stylesheet" href={{ url_for('static', filename='css/agent.css') }}>
 
-.message-container .username.me {
-  display:inline-block;
-  margin-right:5px;
-    color:Black;
-
-}
-
-         .btn {
-            background: #3498db;
-            background-image: -webkit-linear-gradient(top, #3498db, #2980b9);
-            background-image: -moz-linear-gradient(top, #3498db, #2980b9);
-            background-image: -ms-linear-gradient(top, #3498db, #2980b9);
-            background-image: -o-linear-gradient(top, #3498db, #2980b9);
-            background-image: linear-gradient(to bottom, #3498db, #2980b9);
-            -webkit-border-radius: 28;
-            -moz-border-radius: 28;
-            border-radius: 28px;
-            font-family: Arial;
-            color: #ffffff;
-            font-size: 20px;
-            padding: 10px 20px 10px 20px;
-            text-decoration: none;
-        }
-
-        .btn:hover {
-            background: #3cb0fd;
-            background-image: -webkit-linear-gradient(top, #3cb0fd, #3498db);
-            background-image: -moz-linear-gradient(top, #3cb0fd, #3498db);
-            background-image: -ms-linear-gradient(top, #3cb0fd, #3498db);
-            background-image: -o-linear-gradient(top, #3cb0fd, #3498db);
-            background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
-            text-decoration: none;
-        }
-    </style>
     <script type="text/javascript" src="//media.twiliocdn.com/taskrouter/js/v1.9.4/taskrouter.min.js"></script>
     <script src="https://media.twiliocdn.com/sdk/js/common/v0.1/twilio-common.min.js"></script>
     <script src="https://media.twiliocdn.com/sdk/js/chat/v1.2/twilio-chat.min.js"></script>
@@ -73,7 +14,7 @@
         var ReservationObject;
         var chatClient;
         var $chatWindow = $('#messages');
-        var $chatWindow = $('#messages');
+        var user_dataObject;
 
          // A handle to the "general" chat channel - the one and only channel we
         // will have in this sample app
@@ -99,7 +40,7 @@
                 logger(reservation.sid);
                 console.log(reservation.sid);
                 ReservationObject = reservation;
-
+                buttonManager("accept", "inline");
 
             });
 
@@ -189,18 +130,14 @@
 
             ReservationObject.accept();
             console.log(ReservationObject);
-
-
+            buttonManager("accept", "none");
+            buttonManager("end", "inline");
+            buttonManager("escalate", "inline");
             // Our interface to the Chat service
 
-
-            // The server will assign the client a random username - store that value
-            // here
             var username = worker.friendlyName;
 
             // Helper function to print info messages to the chat window
-
-
             function logger(message) {
                     var log = document.getElementById('log');
                     log.value += "\n> " + message;
@@ -239,6 +176,11 @@
                 // Alert the user they have been assigned a random username
                 username = data.identity;
                 console.log(ReservationObject);
+                user_identity = data.identity;
+                user_dataObject = data;
+                console.log(data);
+                console.log(user_identity);
+
                 // Initialize the Chat client
                 chatClient = new Twilio.Chat.Client(data.token);
                 chatClient.getSubscribedChannels().then(createOrJoinGeneralChannel);
@@ -276,6 +218,7 @@
                     generalChannel.sendMessage("Thank you for contacting OwlCorp today my name is " + ReservationObject.workerName + " how can I help you today?");
                 });
 
+
                 // Listen for new messages sent to the channel
                 generalChannel.on('messageAdded', function(message) {
 
@@ -283,14 +226,13 @@
                 });
 
                 generalChannel.on('typingStarted', function (member) {
-                   console.log("sponge!");
-                   printMessage(member.identity + ' is typing ...');
+                document.getElementById("typing").innerText =  member.identity + " is typing";
 
                    });
 
                 generalChannel.on('typingEnded', function (member) {
-                   console.log("cheese");
-                          printMessage(member.identity + ' has stopped typing');
+                  document.getElementById("typing").innerText =  member.identity + " stopped typing";
+
                 });
 
             }
@@ -312,12 +254,28 @@
 
 
         function completeReservation(){
-            logger('chat complete!')
-            //printMessage(ReservationObject.workerName, " has left the chat");
+            logger('chat complete!');
+           print(user_dataObject);
             ReservationObject.task.complete();
+             $.post("/postChat/", {
+                channel: ReservationObject.task.attributes.channel,
+                 identity: user_dataObject.identity
 
+            });
 
         }
+
+        function escalateChat(){
+           logger("Attempting to create escalation to Manager");
+             $.post("/escalateChat/", {
+                channel: ReservationObject.task.attributes.channel,
+                 identity: user_dataObject.identity
+            }).then(function(Task) {
+                        logger('Created escalation: ' + Task);
+
+                    });
+        }
+
 
         function logger(message) {
             var log = document.getElementById('log');
@@ -335,7 +293,9 @@
             bindAgentActivityButtons();
         };
 
-
+    function buttonManager (button, visible) {
+        document.getElementById(button).style.display = visible;
+    }
     </script>
 
 </head>
@@ -361,8 +321,12 @@
         <button class="change-activity" data-next-activity="Offline">Go Offline</button>
     </section>
     <section>
-        <button class="btn" onclick="acceptReservation()">Accept chat</button>
-         <button class="btn" onclick="completeReservation()">End chat</button>
+        <button id="accept" class="btn" style="display:none" onclick="acceptReservation()">Accept chat</button>
+         <button id="end" class="btn" style="display:none"  onclick="completeReservation()">End chat</button>
+          <button id="Leave" class="btn" style="display:none"  onclick="completeReservation()">Leave chat</button>
+           <button id="escalate" class="btn" style="display:none"  onclick="escalateChat()">Escalate chat</button>
+            <button id="Leave" class="btn" style="display:none"  onclick="">Leave chat</button>
+
     </section>
    <br />
     <section class="log">
@@ -374,7 +338,9 @@
 
 
   <section>
+      <div id="typing"></div>
     <div id="messages"></div>
+
     <input id="chat-input" type="text" placeholder="say anything" autofocus/>
   </section>
 

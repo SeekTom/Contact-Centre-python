@@ -338,7 +338,84 @@ def agentChat():
 
     return render_template('agent_desktop_chat.html', worker_token=worker_token.decode(
         "utf-8"))
+@app.route('/escalateChat/', methods=['POST'])
+def escalateChat():
 
+    task = client.taskrouter.workspaces(workspace_sid).tasks \
+        .create(workflow_sid="WW4af8717df650b33eaaf1b9e5f52d8014", task_channel="chat",
+                attributes='{"selected_product":"manager", "escalation_type": "chat", "channel":"' + request.values.get("channel") + '"}')
+    print("Escalation to manager created " + task.sid)
+    task_sid = {"TaskSid": task.sid}
+
+    return jsonify(task_sid)
+
+@app.route('/postChat/', methods=['GET'])
+def returnTranscript(charset='utf-8'):
+    messages = []
+    get_transcript = client.chat \
+        .services(chat_service) \
+        .channels("CHfbb449d4e45840a08c6dbf3bb1cf392d") \
+        .messages \
+        .list()
+
+    for message in get_transcript:
+
+        messages.append(message.from_ + ": " + message.body)
+        print(message.from_ + ": " + message.body)
+
+    data = []
+
+    for messages in get_transcript:
+
+        item = {"message": message.from_ + ": " + message.body}
+        data.append(item)
+
+    return render_template('chat_transcript.html', chat_messages=data)
+
+
+@app.route('/postChat/', methods=['POST'])
+def getTranscript():
+    #output chat transcript to console
+    print(chat_service)
+    channel = request.values.get("channel")
+    identity = request.values.get("identity")
+    messages = []
+    # leave channel
+
+
+    response = client.chat \
+        .services(chat_service) \
+        .channels(channel) \
+        .members(identity) \
+        .delete()
+
+    #update channel to state user has left
+
+    leave_message = client.chat \
+        .services(chat_service) \
+        .channels(channel) \
+        .messages \
+        .create(identity + " has left the chat.")
+
+    get_transcript = client.chat \
+        .services(chat_service) \
+        .channels(channel) \
+        .messages \
+        .list()
+
+    for message in get_transcript:
+
+        messages.append(message.from_ + ": " + message.body)
+        print(message.from_ + ": " + message.body)
+
+    return render_template('chat_transcript.html')
+    #delete channel
+
+   # response = client.chat \
+   #     .services(chat_service) \
+    #    .channels(request.values.get("channel")) \
+   #     .delete()
+  #  return response
 # Basic health check - check environment variables have been configured
 # correctly
 @app.route('/config')

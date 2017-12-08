@@ -8,10 +8,16 @@ workflow_sid = os.environ.get("TWILIO_ACME_SUPPORT_WORKFLOW_SID") #support
 workflow_sales_sid = os.environ.get("TWILIO_ACME_SALES_WORKFLOW_SID") #sales
 workflow_billing_sid = os.environ.get("TWILIO_ACME_BILLING_WORKFLOW_SID") #billing
 workflow_OOO_sid = os.environ.get("TWILIO_ACME_OOO_SID")
+worker_sid = "WK7d2e2a04bb9afb289cec096e07221409"
 
 client = Client(account_sid, auth_token)
-worker_channel = client.taskrouter.workspaces(workspace_sid) \
-    .workers("WK376dcd75a6d58f2cce742302a0e79862").worker_channels('TC1e171fc73ce4b850fd96bed0012c0fd2').fetch
-#taskqueue = taskqueue.update(target_workers='languages HAS "english"')
 
-print(worker_channel)
+#print taskchannel for workspace
+task_channel = client.taskrouter.workspaces(workspace_sid).task_channels.get('chat').fetch()
+print(task_channel.friendly_name)
+print(task_channel.sid)
+
+worker_channel = client.taskrouter.workspaces(workspace_sid).workers(worker_sid).worker_channels.list()
+for channel in worker_channel:
+
+        print(worker_channel.task_channel_unique_name)
