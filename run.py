@@ -1,3 +1,4 @@
+# encoding: utf-8
 from flask import Flask, request, Response, render_template, jsonify
 from twilio.rest import Client
 from twilio.jwt.taskrouter.capabilities import WorkerCapabilityToken
@@ -77,7 +78,7 @@ def incoming_call():
     with resp.gather(num_digits="1", action="/incoming_call/department", timeout=10) as g:
         g.say("Para Espanol oprime el uno.", language='es')
         g.say("For English, press two.", language='en')
-        g.say("Pour Francais, pressé un", language='fr')
+        g.say(u"Pour Francais, pressé un", language='fr')
 
     return Response(str(resp), mimetype='text/xml')
 
@@ -110,9 +111,9 @@ def dept():
     dept_lang = request.values['lang']
     digit = request.values['digit']
     say_dict = {
-      'es': ["Para sales oprime uno", "Para support oprime duo", "para billing oprime tres"],
+      'es': ["Para sales oprime uno", "Para support oprime duo", "Para billing oprime tres"],
       'en': ["For Sales press one", "For Support press two", "For Billing press three"],
-      'fr': ["Pour sales pressé un", "Pour support pressé deux", "Pour billing pressé tres"]
+      'fr': [u"Pour sales pressé un", u"Pour support pressé deux", u"Pour billing pressé tres"]
     }
     with resp.gather(num_digits=digit, action="/enqueue_call?lang="+dept_lang, timeout="10") as g:
         g.say(say_dict.get(dept_lang)[0], language=dept_lang)
