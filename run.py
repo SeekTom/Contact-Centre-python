@@ -152,29 +152,17 @@ def call():
 
 @app.route("/agent_list", methods=['GET', 'POST'])
 def generate_agent_list_view():
-    #create an array of workers and share that with the template so that workers can be queried on the client side
+    # Create arrays of workers and share that with the template so that workers can be queried on the client side
 
-    workers = client.taskrouter.workspaces(workspace_sid).workers.list()
-    worker_list = []
-    worker_chat = []
+    # All workers can do voice
+    all_workers = client.taskrouter.workspaces(workspace_sid).workers.list()
 
+    # Only some workers can do chat
     expression = "skills HAS 'chat'"
-
     chat_workers = client.taskrouter.workspaces(workspace_sid) \
         .workers.list(target_workers_expression=expression)
 
-    for c_worker in chat_workers:
-        worker_chat.append(c_worker.sid)
-        worker_chat.append(c_worker.friendly_name)
-
-    for worker in workers:
-        worker_list.append(worker.sid)
-        worker_list.append(worker.friendly_name)
-
-    for cheese in worker_chat:
-        print(cheese)
-
-    return render_template('agent_list.html', workers=worker_list, chatworkers = chat_workers)
+    return render_template('agent_list.html', voice_workers=all_workers, chat_workers=chat_workers)
 
 
 @app.route("/agents", methods=['GET'])
