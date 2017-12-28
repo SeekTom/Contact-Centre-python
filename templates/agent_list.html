@@ -7,26 +7,17 @@
 
 </head>
 <body>
-<div  id="workers">
+<div id="workers">
     <h2>A selection of voice workers</h2>
-
-      <a href="/agents?WorkerSid={{ workers[0] }}">{{ workers[1] }}</a><br />
-      <a href="/agents?WorkerSid={{ workers[2] }}">{{ workers[3] }}</a><br />
-      <a href="/agents?WorkerSid={{ workers[4] }}">{{ workers[5] }}</a><br />
-
-      <a href="/agents?WorkerSid={{ workers[6] }}">{{ workers[7] }}</a><br />
-      <a href="/agents?WorkerSid={{ workers[8] }}">{{ workers[9] }}</a><br />
-
-      <a href="/agents?WorkerSid={{ workers[10] }}">{{ workers[11] }}</a><br />
-
-      <a href="/agents?WorkerSid={{ workers[12] }}">{{ workers[13] }}</a><br />
-      <a href="/agents?WorkerSid={{ workers[14] }}">{{ workers[15] }}</a><br />
+    {% for worker in voice_workers %}
+      <a href="/agents?WorkerSid={{ worker.sid }}">{{ worker.friendly_name }}</a><br />
+    {% endfor %}
 </div>
-<div  id="workers">
+<div id="workers">
     <h2>A selection of chat workers</h2>
-
-      <a href="/agent_chat?WorkerSid=WK7d2e2a04bb9afb289cec096e07221409">Francisco</a><br />
-      <a href="/agent_chat?WorkerSid=WK98e7ffd8b93c1942314f1f3223ecab55">Bob</a><br />
+    {% for c_worker in chat_workers %}
+      <a href="/agent_chat?WorkerSid={{ c_worker.sid }}">{{ c_worker.friendly_name }}</a><br />
+    {% endfor %}
 </div>
 </body>
 </html>
