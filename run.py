@@ -12,6 +12,8 @@ import os
 
 app = Flask(__name__, static_folder='app/static')
 
+base_url = "https://acme-corp-demo.herokuapp.com" # Replace with your own URL
+
 # Your Account Sid and Auth Token from twilio.com/user/account
 account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
 auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
@@ -26,12 +28,16 @@ api_key = os.environ.get("TWILIO_ACME_CHAT_API_KEY")
 api_secret = os.environ.get("TWILIO_ACME_CHAT_SECRET")
 chat_service = os.environ.get("TWILIO_ACME_CHAT_SERVICE_SID")
 
-
 twiml_app = os.environ.get("TWILIO_ACME_TWIML_APP_SID")
 caller_id = os.environ.get("TWILIO_ACME_CALLERID")
 
 client = Client(account_sid, auth_token)
 
+# Create dictionary with activity SIDs
+activity = {}
+activities = client.taskrouter.workspaces(workspace_sid).activities.list()
+for a in activities:
+    activity[a.friendly_name] = a.sid
 
 # private functions
 
@@ -78,7 +84,7 @@ def incoming_call():
     with resp.gather(num_digits="1", action="/incoming_call/department", timeout=10) as g:
         g.say("Para Espanol oprime el uno.", language='es')
         g.say("For English, press two.", language='en')
-        g.say(u"Pour Francais, pressé un", language='fr')
+        g.say(u"Pour Francais, pressé trois", language='fr')
 
     return Response(str(resp), mimetype='text/xml')
 
@@ -112,7 +118,7 @@ def dept():
     digit = request.values['digit']
     say_dict = {
       'es': ["Para sales oprime uno", "Para support oprime duo", "Para billing oprime tres"],
-      'en': ["For Sales press one", "For Support press two", "For Billing press three"],
+      'en': ["For sales press one", "For support press two", "For billing press three"],
       'fr': [u"Pour sales pressé un", u"Pour support pressé deux", u"Pour billing pressé tres"]
     }
     with resp.gather(num_digits=digit, action="/enqueue_call?lang="+dept_lang, timeout="10") as g:
@@ -187,9 +193,11 @@ def generate_view(charset='utf-8'):
 
     client_token = capability.to_jwt()
 
+    # render client/worker tokens to the agent desktop so that they can be queried on the client side
     return render_template('agent_desktop.html', token=client_token.decode("utf-8"),
                            worker_token=worker_token.decode("utf-8"),
-                           client_name=worker_sid)  # render client/worker tokens to the agent desktop so that they can be queried on the client side
+                           client_name=worker_sid, activity=activity,
+                           caller_id=caller_id, base_url=base_url)
 
 
 @app.route("/agents/noclient", methods=['GET', 'POST'])

@@ -92,7 +92,7 @@
           function hangupManager() {
             ReservationObject.task.complete(); //complete the call instruction task
             //set the manager to wrap up
-             worker.update("ActivitySid", "WA1734410947caec098f53ed4f29e35732", function (error, worker) {
+             worker.update("ActivitySid", "{{ activity['WrapUp'] }}", function (error, worker) {
                 if (error) {
                     console.log(error.code);
                     console.log(error.message);
@@ -101,7 +101,7 @@
                 }
             });
 
-             Twilio.Device.disconnectAll();
+            Twilio.Device.disconnectAll();
 
             document.getElementById("btn_hangup").style.display = "none";
             document.getElementById("btn_online").style.display = "none";
@@ -130,7 +130,7 @@
                 var workerStatus = worker.activityName;
                 updateUIStatus(worker.activityName);
 
-                if (worker.activitySid === "WA1734410947caec098f53ed4f29e35732") { //replace with your wrap-up activitySID
+                if (worker.activitySid === "{{ activity['WrapUp'] }}") {
 
                     if (ReservationObject) {
                         //console.log("Worker is wrapping up!");
@@ -141,14 +141,13 @@
 
 
                 if (worker.activityName === "Offline" || worker.activityName === "WrapUp") {
-
                     document.getElementById("btn_online").style.display = "inline";
                     document.getElementById("btn_offline").style.display = "none";
                 }
 
 
             });
-            worker.on("reservation.created", function (reservation) {
+            worker.on('reservation.created', function (reservation) {
                 logger("-----");
                 logger("You have been reserved to handle a call!");
                 logger("Call from: " + reservation.task.attributes.from);
@@ -160,25 +159,22 @@
                 document.getElementById("btn_accept").style.display = "inline";
                 document.getElementById("btn_reject").style.display = "inline";
                 document.getElementById("btn_offline").style.display = "none";
-
-
             });
 
-            worker.on("reservation.accepted", function (reservation) {
+            worker.on('reservation.accepted', function (reservation) {
                 logger("Reservation " + reservation.sid + " accepted!");
-                ReservationObject = reservation; //update reservationObject to contain the updated reservation information/task attributes e.g. conference
-
+                ReservationObject = reservation; // update reservationObject to contain the updated reservation information/task attributes e.g. conference
             });
 
-            worker.on("reservation.rejected", function (reservation) {
+            worker.on('reservation.rejected', function (reservation) {
                 logger("Reservation " + reservation.sid + " rejected!");
             });
 
-            worker.on("reservation.timeout", function (reservation) {
+            worker.on('reservation.timeout', function (reservation) {
                 logger("Reservation " + reservation.sid + " timed out!");
             });
 
-            worker.on("reservation.canceled", function (reservation) {
+            worker.on('reservation.canceled', function (reservation) {
                 logger("Reservation " + reservation.sid + " canceled!");
             });
         }
@@ -186,13 +182,13 @@
 
         function goAvailable() {
 
-        // update with your online available
-            worker.update("ActivitySid", "WA2b2f79aad49868d29b8d4750c1eb02d2", function (error, worker) {
+            // update worker's activity to Idle
+            worker.update("ActivitySid", "{{ activity['Idle'] }}", function (error, worker) {
                 if (error) {
                     console.log(error.code);
                     console.log(error.message);
                 } else {
-                    console.log(worker.activityName); // "Offline"
+                    console.log(worker.activityName); // "Idle"
                 }
             });
 
@@ -202,27 +198,8 @@
 
         function goOffline() {
 
-
-            worker.update("ActivitySid", "WA20c6530534f9ef1361747282aa2158d0", function (error, worker) {
-                if (error) {
-                    console.log(error.code);
-                    console.log(error.message);
-                } else {
-                    console.log(worker.activityName); // "Offline"
-                }
-            });
-
-
-            document.getElementById("btn_offline").style.display = "none";
-            document.getElementById("btn_mute").style.display = "none";
-            document.getElementById("btn_unmute").style.display = "none";
-            document.getElementById("btn_escalate").style.display = "none";
-
-        }
-
-        function goBreak() {
-
-            worker.update("ActivitySid", "WA0bf390d6f4f043c27141abfa639c6605", function (error, worker) { //replace with your break activitySid
+            // update worker's activity to Offline
+            worker.update("ActivitySid", "{{ activity['Offline'] }}", function (error, worker) {
                 if (error) {
                     console.log(error.code);
                     console.log(error.message);
@@ -254,14 +231,13 @@
         }
 
         function acceptReservation() {
-
             if (ReservationObject.task.attributes.selected_product === "manager") {
-                //Manager escalation, issue call instuction
-                ReservationObject.accept(); //Call instruction requires you to manually accept the Reservation prior to issuing the instruction
+                // Manager escalation, issue call instuction
+                ReservationObject.accept(); // Call instruction requires you to manually accept the Reservation prior to issuing the instruction
                 ReservationObject.call(
-                    "+441273934716",//replace with your own callerID
-                    "https://acme-corp-demo.herokuapp.com/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid, //replace with your own url
-                    "https://requestb.in/1128c331", //replace with your own url for conferenceEvents
+                    "{{ caller_id }}",
+                    "{{ base_url }}/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid,
+                    "https://requestb.in/1128c331", // Replace with your own url for conferenceEvents
                     "false",
 
 
@@ -280,33 +256,29 @@
             }
             else {
 
-                //not a transfer issue conference instruction
+                // not a transfer issue conference instruction
                 var options = {
-
-                    "From": "+441273934716", //replace with your own CallerID
-                    "PostWorkActivitySid": "WA1734410947caec098f53ed4f29e35732", //replace with your postActivitySid
+                    "From": "{{ caller_id }}",
+                    "PostWorkActivitySid": "{{ activity['WrapUp'] }}",
                     "Timeout": "30",
                     "Record": "true",
                     "RecordingCallbackUrl": "https://requestb.in/1128c331", //replace with your own url
-                    "ConferenceStatusCallback": "https://acme-corp-demo.herokuapp.com/conference_callback", //replace with your own url
+                    "ConferenceStatusCallback": "{{ base_url }}/conference_callback",
                     "ConferenceStatusCallbackEvent": "start,end,join,leave"
                 };
 
                 ReservationObject.conference(null, null, null, null, null, options,
-
                     function (error, reservation) {
                         if (error) {
                             console.log(error.code);
                             console.log(error.message);
-
                         }
                     }
                 );
+
                 logger("Conference initiated!");
                 document.getElementById("btn_hangup").style.display = "inline";
-
             }
-
 
             document.getElementById("btn_reject").style.display = "none";
             document.getElementById("btn_accept").style.display = "none";
@@ -408,8 +380,7 @@
         <button id="btn_hangup" style="display:none;" class="btn" onclick="hangup();">Hangup</button>
            <button id="btn_hangupManager" style="display:none;" class="btn" onclick="hangupManager();">Hangup</button>
         <button id="btn_online" style="display:none;" class="btn" onclick="goAvailable()">Go Available</button>
-        <button id="btn_online" style="display:none;" class="btn" onclick="goBreak()">Take a break</button>
-        <button id="btn_offline" class="btn" onclick="goOffline()"> Go Offline</button>
+        <button id="btn_offline" class="btn" onclick="goOffline()">Go Offline</button>
     </section>
     <section class="log">
     </section>
