@@ -119,7 +119,7 @@ if(args.action == 'init'):
         .create(friendly_name='WrapUp', available='false')
     print('Default WrapUp : ' + wrapup.sid + ' activity has been created.')
 
-    # build dictionary of Activity SIDs
+    # Build dictionary of Activity SIDs
     activities = client.taskrouter.workspaces(workspace.sid).activities.list()
     activity_sid = {}
     for activity in activities:
@@ -135,21 +135,21 @@ if(args.action == 'init'):
         print('  Worker ' + str(worker.friendly_name) + ' : ' + str(worker.sid) + ' has been created.')
 
     print('Creating TaskQueues...')
-    # First delete the default workflow
+    # First delete the default Workflow
     workflows = client.taskrouter.workspaces(workspace.sid).workflows.list()
     for workflow in workflows:
         workflow = client.taskrouter.workspaces(workspace.sid).workflows(workflow.sid).fetch()
         if(workflow.friendly_name == 'Default Fifo Workflow'):
             success = client.taskrouter.workspaces(workspace.sid).workflows(workflow.sid).delete()
             print('  Default Workflow ' + str(workflow.friendly_name) + ' : ' + str(workflow.sid) + ' has been deleted.')
-    # Then delete the default taskqueue
+    # Then delete the default TaskQueue
     taskqueues = client.taskrouter.workspaces(workspace.sid).task_queues.list()
     for taskqueue in taskqueues:
         taskqueue = client.taskrouter.workspaces(workspace.sid).task_queues(taskqueue.sid).fetch()
         if(taskqueue.friendly_name == 'Sample Queue'):
             success = client.taskrouter.workspaces(workspace.sid).task_queues(taskqueue.sid).delete()
             print('  Default TaskQueue ' + str(taskqueue.friendly_name) + ' : ' + str(taskqueue.sid) + ' has been deleted.')
-    # Now create the new ones
+    # Now create new TaskQueues
     taskqueue_sid = {}
     for init_tq in init_taskqueues:
         taskqueue = client.taskrouter.workspaces(workspace.sid) \
@@ -159,6 +159,7 @@ if(args.action == 'init'):
                 assignment_activity_sid=activity_sid['Busy'],
                 max_reserved_workers=init_tq['max_reserved_workers'],
                 target_workers=init_tq['target_workers'])
+        # Build dictionary of TaskQueue SIDs
         taskqueue_sid[init_tq['friendly_name']] = taskqueue.sid
         print('  TaskQueue ' + str(taskqueue.friendly_name) + ' : ' + str(taskqueue.sid) + ' has been created.')
 
@@ -184,7 +185,6 @@ if(args.action == 'init'):
     ]
 
     print('Creating Workflows...')
-    # Now create the new ones
     for init_wf in init_workflows:
         workflow = client.taskrouter.workspaces(workspace.sid).workflows.create(
             friendly_name=init_wf['friendly_name'],
@@ -192,6 +192,5 @@ if(args.action == 'init'):
             configuration=json.dumps(init_wf['configuration'])
         )
         print('  Workflow ' + str(workflow.friendly_name) + ' : ' + str(workflow.sid) + ' has been created.')
-
 
     print('Workspace ' + str(args.ws_name) + ' : ' + str(workspace.sid) + ' has been created.')
