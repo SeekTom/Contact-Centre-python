@@ -59,8 +59,6 @@ init_taskqueues = [
     },
 ]
 
-client = Client(account_sid, auth_token)
-
 parser = argparse.ArgumentParser(description="Twilio TaskRouter Console Manager")
 parser.add_argument("-d", "--delete", help="Delete Workspace and all of its content", dest='action', action='store_const', const='delete')
 parser.add_argument("-l", "--list", help="List existing Workspaces", dest='action', action='store_const', const='list')
@@ -79,10 +77,54 @@ if(args.action == None):
 # List
 if(args.action == 'list'):
     client = Client(account_sid, auth_token)
-    workspaces = client.taskrouter.workspaces.list()
 
-    for workspace in workspaces:
-        print str(workspace.friendly_name), ':', str(workspace.sid)
+    # If no SID was provided, just list all Workspaces
+    if(args.ws_sid == None):
+        workspaces = client.taskrouter.workspaces.list()
+
+        for workspace in workspaces:
+            print str(workspace.friendly_name), ':', str(workspace.sid)
+
+    # If SID was provided, list details about that one Workspace
+    else:
+        workspace = client.taskrouter.workspaces(args.ws_sid).fetch()
+        print('Workspace ' + str(workspace.friendly_name) + ' : ' + str(workspace.sid))
+        
+        print('\nWorkers')
+        print('  %-10s  %-34s   %-12s   %s' % ('Name', 'SID', 'Languages', 'Skills'))
+        workers = client.taskrouter.workspaces(args.ws_sid).workers.list()
+        for worker in workers:
+            attr = json.loads(worker.attributes)
+            skills = ''
+            if ('skills' in attr):
+                skills = ', '.join(str(skill) for skill in attr['skills'])
+            languages = ''
+            if ('languages' in attr):
+                languages = ', '.join(str(lang) for lang in attr['languages'])
+            print('  %-10s  %s   %-12s   %s' % (worker.friendly_name, worker.sid, languages, skills))
+            
+
+        print('\nActivities')
+        print('  %-10s  %-34s   %s' % ('Name', 'SID', 'Available'))
+        activities = client.taskrouter.workspaces(args.ws_sid).activities.list()
+        for activity in activities:
+            print('  %-10s  %s   %s' % (activity.friendly_name, activity.sid, activity.available))
+
+        print('\nTaskQueues')
+        print('  %-10s  %-34s   %s' % ('Name', 'SID', 'Target Workers'))
+        taskqueues = client.taskrouter.workspaces(args.ws_sid).task_queues.list()
+        for taskqueue in taskqueues:
+            print('  %-10s  %s   %s' % (taskqueue.friendly_name, taskqueue.sid, taskqueue.target_workers))
+
+        print('\nWorkflows')
+        print('  %-10s  %-34s' % ('Name', 'SID'))
+        workflows = client.taskrouter.workspaces(args.ws_sid).workflows.list()
+        for workflow in workflows:
+            print('  %-10s  %s' % (workflow.friendly_name, workflow.sid))
+            wf_config = json.loads(workflow.configuration)
+            print('    %-15s   %s' % ('Filter Name', 'Expression'))
+            for filter in wf_config['task_routing']['filters']:
+                print('    %-15s   %s' % (filter['filter_friendly_name'], filter['expression']))
 
 
 # Delete
@@ -109,6 +151,7 @@ if(args.action == 'init'):
         parser.print_help()
         exit
         
+    client = Client(account_sid, auth_token)
     workspace = client.taskrouter.workspaces.create(
         friendly_name=args.ws_name,
         event_callback_url=args.ws_url,
