@@ -10,8 +10,8 @@ This script will setup a demo TaskRouter instance
 **Usage:**
 
 - Add your accountSID and AuthToken on lines 8 & 9:
--- account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
-- auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
+-  account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
+-  auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
 
 If you wanted to create a new workspace with the Friendly name of MyNewWorkSpace:
 
