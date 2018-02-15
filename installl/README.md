@@ -1,4 +1,4 @@
-#Contact center setup script
+##Contact center setup script
 
 This script will setup a demo TaskRouter instance
 
@@ -7,7 +7,7 @@ This script will setup a demo TaskRouter instance
 - Five TaskQueues 
 - One Workflow
 
-#Usage:
+##Usage:
 
 - Add your accountSID and AuthToken on lines 8 & 9:
 -- account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
@@ -17,7 +17,7 @@ If you wanted to create a new workspace with the Friendly name of MyNewWorkSpace
 
 `python taskrouter_cli.py --name MyNewWorkSpace`
 
-#Twilio TaskRouter Console Manager
+##Twilio TaskRouter Console Manager
 
 taskrouter_cli.py [-h] [-d] [-l] [-i] [--sid WS_SID] [--name WS_NAME]
                          [--url WS_URL]
