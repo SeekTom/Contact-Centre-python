@@ -18,7 +18,7 @@ If you wanted to create a new workspace with the Friendly name of MyNewWorkSpace
 `python taskrouter_cli.py --name MyNewWorkSpace`
 
 **Twilio TaskRouter Console Manager**
-
+```
 taskrouter_cli.py [-h] [-d] [-l] [-i] [--sid WS_SID] [--name WS_NAME]
                          [--url WS_URL]
 optional arguments:
@@ -29,4 +29,4 @@ optional arguments:
   --sid WS_SID    Workspace SID
   --name WS_NAME  Workspace Name
   --url WS_URL    Event Callback URL
-
+```
