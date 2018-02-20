@@ -74,14 +74,17 @@
 
         function hangup() {
             Twilio.Device.disconnectAll();
-            if (ReservationObject.task.attributes.selected_product === "manager"){
-
-                logger(worker.friendlyName + " has ended the call");
-                ReservationObject.task.complete();
-            }
-            else{
-                logger(worker.friendlyName + " has ended the call");
-            }
+            
+            logger(worker.friendlyName + " has ended the call");
+            ReservationObject.task.complete();
+            
+            //if (ReservationObject.task.attributes.selected_product === "manager"){
+            //    logger(worker.friendlyName + " has ended the call");
+              //  ReservationObject.task.complete();
+            //}
+            //else{
+            //    logger(worker.friendlyName + " has ended the call");
+            //}
             document.getElementById("btn_hangup").style.display = "none";
             document.getElementById("btn_online").style.display = "none";
             document.getElementById("btn_offline").style.display = "inline";
