@@ -11,7 +11,7 @@ auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
 init_workers = [
     {
         'friendly_name' : 'Francisco',
-        'attributes'    : '{"skills":["support","billing","sales","chat"], "languages":["en","es","fr"], "contact_uri":"client:$WORKER_SID$"}',
+        'attributes'    : '{"skills":["support","billing","sales"], "languages":["en","es","fr"], "contact_uri":"client:$WORKER_SID$"}',
         'channels'      : ['voice', 'chat']
     },
     {
