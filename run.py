@@ -12,7 +12,7 @@ import os
 
 app = Flask(__name__, static_folder='app/static')
 
-base_url = "https://acme-corp-demo.herokuapp.com" # Replace with your own URL
+base_url = os.environ.get("TWILIO_ACME_BASE_URL")
 
 # Your Account Sid and Auth Token from twilio.com/user/account
 account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
