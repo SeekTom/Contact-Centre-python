@@ -11,11 +11,13 @@ auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
 init_workers = [
     {
         'friendly_name' : 'Francisco',
-        'attributes'    : '{"skills":["support","billing","sales","chat"], "languages":["en","es","fr"], "contact_uri":"client:$WORKER_SID$"}'
+        'attributes'    : '{"skills":["support","billing","sales","chat"], "languages":["en","es","fr"], "contact_uri":"client:$WORKER_SID$"}',
+        'channels'      : ['voice', 'chat']
     },
     {
         'friendly_name' : 'Diego',
-        'attributes'    : '{"skills":["support","billing"], "languages":["es","en"], "contact_uri":"client:$WORKER_SID$"}'
+        'attributes'    : '{"skills":["support","billing"], "languages":["es","en"], "contact_uri":"client:$WORKER_SID$"}',
+        'channels'      : ['voice']
     },
     {
         'friendly_name' : 'Susan',
@@ -103,6 +105,10 @@ if(args.action == 'list'):
                 languages = ', '.join(str(lang) for lang in attr['languages'])
             print('  %-10s  %s   %-12s   %s' % (worker.friendly_name, worker.sid, languages, skills))
             
+        print('\nWorker channels')
+        print('            ' + ''.join('%-8s' % (task_channel.unique_name,) for task_channel in workspace.task_channels.list()))
+        for worker in workers:
+            print('  %-10s' % worker.friendly_name) + ''.join('%-8s' % ('x' if worker_channel.available else '',) for worker_channel in worker.worker_channels.list())
 
         print('\nActivities')
         print('  %-10s  %-34s   %s' % ('Name', 'SID', 'Available'))
@@ -123,9 +129,9 @@ if(args.action == 'list'):
             print('  %-10s  %s' % (workflow.friendly_name, workflow.sid))
             wf_config = json.loads(workflow.configuration)
             print('    %-15s   %s' % ('Filter Name', 'Expression'))
-            for filter in wf_config['task_routing']['filters']:
-                print('    %-15s   %s' % (filter['filter_friendly_name'], filter['expression']))
-
+            if 'task_routing' in wf_config and 'filters' in wf_config['task_routing']:
+                for filter in wf_config['task_routing']['filters']:
+                    print('    %-15s   %s' % (filter['filter_friendly_name'], filter['expression']))
 
 # Delete
 if(args.action == 'delete'):
@@ -168,6 +174,7 @@ if(args.action == 'init'):
     for activity in activities:
         activity_sid[activity.friendly_name] = activity.sid
 
+    task_channels = workspace.task_channels.list()
     print('Creating workers...')
     for init_worker in init_workers:
         worker = client.taskrouter.workspaces(workspace.sid).workers.create(
@@ -175,6 +182,11 @@ if(args.action == 'init'):
         )
         updated_attributes = init_worker['attributes'].replace('$WORKER_SID$', worker.sid)
         worker = worker.update(attributes=updated_attributes)
+
+        # set worker's channels if there are any configured, otherwise leave all on by default
+        if 'channels' in init_worker:
+            for task_channel in task_channels:
+                worker.worker_channels(task_channel.unique_name).update(available=bool(task_channel.unique_name in init_worker['channels']))
         print('  Worker ' + str(worker.friendly_name) + ' : ' + str(worker.sid) + ' has been created.')
 
     print('Creating TaskQueues...')
