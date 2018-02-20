@@ -15,17 +15,21 @@ This script will setup a demo TaskRouter instance
 
 If you wanted to create a new workspace with the Friendly name of MyNewWorkSpace:
 
-`python taskrouter_cli.py --name MyNewWorkSpace`
+```
+taskrouter_cli.py --init --name MyNewWorkSpace
+```
 
 ## Twilio TaskRouter Console Manager
 ```
-taskrouter_cli.py [-h] [-d] [-l] [-i] [--sid WS_SID] [--name WS_NAME]
-                         [--url WS_URL]
+taskrouter_cli.py [-h] [-d] [-l] [-i] [-e] [--sid WS_SID]
+                  [--name WS_NAME] [--url WS_URL]
+                  
 optional arguments:
   -h, --help      show this help message and exit
   -d, --delete    Delete Workspace and all of its content
   -l, --list      List existing Workspaces
   -i, --init      Initialize new Workspace
+  -e, --env       Also print suggested env setup for Workspace when initializing
   --sid WS_SID    Workspace SID
   --name WS_NAME  Workspace Name
   --url WS_URL    Event Callback URL

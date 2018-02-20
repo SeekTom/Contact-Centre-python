@@ -3,6 +3,7 @@
 from twilio.rest import Client
 import os
 import json
+import ntpath
 import argparse
 
 account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
@@ -21,11 +22,13 @@ init_workers = [
     },
     {
         'friendly_name' : 'Susan',
-        'attributes'    : '{"skills":["manager"], "contact_uri":"client:$WORKER_SID$"}'
+        'attributes'    : '{"skills":["manager"], "contact_uri":"client:$WORKER_SID$"}',
+        'channels'      : ['chat']
     },
     {
         'friendly_name' : 'Giselle',
-        'attributes'    : '{"skills":["support", "OOO"], "languages":["en", "fr"], "contact_uri":"client:$WORKER_SID$"}'
+        'attributes'    : '{"skills":["support", "OOO"], "languages":["en", "fr"], "contact_uri":"client:$WORKER_SID$"}',
+        'channels'      : ['voice']
     },
     {
         'friendly_name' : 'Manny',
@@ -37,22 +40,26 @@ init_taskqueues = [
     {
         'friendly_name'        : 'Support',
         'max_reserved_workers' : 10,
-        'target_workers'       : 'skills HAS "support"'
+        'target_workers'       : 'skills HAS "support"',
+        'env_var'              : 'TWILIO_ACME_SUPPORT_WORKFLOW_SID'
     },
     {
         'friendly_name'        : 'Billing',
         'max_reserved_workers' : 10,
-        'target_workers'       : 'skills HAS "billing"'
+        'target_workers'       : 'skills HAS "billing"',
+        'env_var'              : 'TWILIO_ACME_BILLING_WORKFLOW_SID'
     },
     {
         'friendly_name'        : 'Sales',
         'max_reserved_workers' : 10,
-        'target_workers'       : 'skills HAS "sales"'
+        'target_workers'       : 'skills HAS "sales"',
+        'env_var'              : 'TWILIO_ACME_SALES_WORKFLOW_SID'
     },
     {
         'friendly_name'        : 'Off Hours',
         'max_reserved_workers' : 10,
-        'target_workers'       : 'skills HAS "OOO"'
+        'target_workers'       : 'skills HAS "OOO"',
+        'env_var'              : 'TWILIO_ACME_OOO_SID'
     },
     {
         'friendly_name'        : 'Managers',
@@ -61,20 +68,23 @@ init_taskqueues = [
     },
 ]
 
+# For environment variables output (also see 'env_var' key in init_taskqueues)
+ws_env_var = 'TWILIO_ACME_WORKSPACE_SID'
+
 parser = argparse.ArgumentParser(description="Twilio TaskRouter Console Manager")
 parser.add_argument("-d", "--delete", help="Delete Workspace and all of its content", dest='action', action='store_const', const='delete')
 parser.add_argument("-l", "--list", help="List existing Workspaces", dest='action', action='store_const', const='list')
 parser.add_argument("-i", "--init", help="Initialize new Workspace", dest='action', action='store_const', const='init')
+parser.add_argument("-e", "--env", help="Also print suggested env setup for Workspace when initializing", dest='env', action='store_const', const=True)
 parser.add_argument('--sid', help='Workspace SID', dest='ws_sid')
 parser.add_argument('--name', help='Workspace Name', dest='ws_name')
 parser.add_argument('--url', help='Event Callback URL', dest='ws_url')
 
+
 args = parser.parse_args()
-#print(args)
 if(args.action == None):
     parser.print_help()
     exit
-
 
 # List
 if(args.action == 'list'):
@@ -163,6 +173,7 @@ if(args.action == 'init'):
         event_callback_url=args.ws_url,
         template='FIFO'
     )
+    env = { ws_env_var : workspace.sid }
 
     wrapup = client.taskrouter.workspaces(workspace.sid).activities \
         .create(friendly_name='WrapUp', available='false')
@@ -217,6 +228,8 @@ if(args.action == 'init'):
         # Build dictionary of TaskQueue SIDs
         taskqueue_sid[init_tq['friendly_name']] = taskqueue.sid
         print('  TaskQueue ' + str(taskqueue.friendly_name) + ' : ' + str(taskqueue.sid) + ' has been created.')
+        if(args.env and 'env_var' in init_tq):
+            env.update({init_tq['env_var'] : taskqueue.sid})
 
     init_workflows = [
         {
@@ -249,3 +262,12 @@ if(args.action == 'init'):
         print('  Workflow ' + str(workflow.friendly_name) + ' : ' + str(workflow.sid) + ' has been created.')
 
     print('Workspace ' + str(args.ws_name) + ' : ' + str(workspace.sid) + ' has been created.')
+
+    if(args.env):
+        shell = ntpath.basename(os.environ['SHELL'])
+        print('\nEnvironment variables for ' + shell)
+        for key, value in env.items():
+            if shell=='fish':
+                print('set -x ' + key + ' ' + value)
+            else:
+                print('export ' + key + '=' + value)
