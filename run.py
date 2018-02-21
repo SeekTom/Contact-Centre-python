@@ -337,7 +337,7 @@ def agentChat():
 def escalateChat():
 
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid="workflow_mngr", task_channel="chat",
+        .create(workflow_sid=workflow_mngr, task_channel="chat",
                 attributes='{"selected_product":"manager", "escalation_type": "chat", "channel":"' + request.values.get("channel") + '"}')
     print("Escalation to manager created " + task.sid)
     task_sid = {"TaskSid": task.sid}
