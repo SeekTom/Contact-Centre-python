@@ -236,10 +236,12 @@
         function acceptReservation() {
             if (ReservationObject.task.attributes.selected_product === "manager") {
                 // Manager escalation, issue call instuction
-                ReservationObject.accept(); // Call instruction requires you to manually accept the Reservation prior to issuing the instruction
-                ReservationObject.call(
-                    "{{ caller_id }}",
-                    "{{ base_url }}/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid,
+                console.log("manager task");
+                console.log(ReservationObject);
+                console.log("{{ base_url }}/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid)
+                    ReservationObject.call(
+                    "+448081645567",
+                    "http://acme-corp-demo.herokuapp.com/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid,
                     "https://requestb.in/1128c331", // Replace with your own url for conferenceEvents
                     "false",
 
@@ -253,6 +255,8 @@
                         console.log("reservation called the escalation contact");
                     }
                 );
+                ReservationObject.accept(); // Call instruction requires you to manually accept the Reservation prior to issuing the instruction
+
                  document.getElementById("btn_hangupManager").style.display = "inline";
 
                 unmuteCaller(ReservationObject.task.attributes.customer, ReservationObject.task.attributes.conference);

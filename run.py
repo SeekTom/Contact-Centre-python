@@ -18,18 +18,19 @@ base_url = os.environ.get("TWILIO_ACME_BASE_URL")
 account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
 auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
 
-workspace_sid = os.environ.get("TWILIO_ACME_WORKSPACE_SID")
-workflow_sid = os.environ.get("TWILIO_ACME_SUPPORT_WORKFLOW_SID")  # support
-workflow_sales_sid = os.environ.get("TWILIO_ACME_SALES_WORKFLOW_SID")  # sales
-workflow_billing_sid = os.environ.get("TWILIO_ACME_BILLING_WORKFLOW_SID")  # billing
-workflow_OOO_sid = os.environ.get("TWILIO_ACME_OOO_SID")
+workspace_sid = os.environ.get("TWILIO_ACME_WORKSPACE_SID") #workspace
+workflow_sid = os.environ.get("TWILIO_ACME_SUPPORT_WORKFLOW_SID")  # support workflow
+workflow_sales_sid = os.environ.get("TWILIO_ACME_SALES_WORKFLOW_SID")  # sales workflow
+workflow_billing_sid = os.environ.get("TWILIO_ACME_BILLING_WORKFLOW_SID")  # billing workflow
+workflow_OOO_sid = os.environ.get("TWILIO_ACME_OOO_SID") #out of office workflow
+workflow_mngr = os.environ.get("TWILIO_ACME_MANAGER_WORKFLOW_SID") #manager escalation workflow
 
 api_key = os.environ.get("TWILIO_ACME_CHAT_API_KEY")
 api_secret = os.environ.get("TWILIO_ACME_CHAT_SECRET")
 chat_service = os.environ.get("TWILIO_ACME_CHAT_SERVICE_SID")
 
-twiml_app = os.environ.get("TWILIO_ACME_TWIML_APP_SID")
-caller_id = os.environ.get("TWILIO_ACME_CALLERID")
+twiml_app = os.environ.get("TWILIO_ACME_TWIML_APP_SID") #Twilio client application SID
+caller_id = os.environ.get("TWILIO_ACME_CALLERID") #
 
 client = Client(account_sid, auth_token)
 
@@ -236,7 +237,7 @@ def handle_callback():
             if conf_moderator == "true":
                 message = client.messages.create(
                     to=caller,
-                    from_="+447481343625",
+                    from_=caller_id,
                     body="Thanks for calling OwlCorp, how satisfied were you with your designated agent on a scale of 1 to 10?")
             else:
                 print("Something else happened: " + cb_event)
@@ -259,7 +260,7 @@ def transferCall():
     # add new attributes on the task for customer callsid, customer tasksid and conference
 
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid=workflow_sid,
+        .create(workflow_sid=workflow_mngr,
                 attributes='{"selected_product":"manager", "conference":"' + request.values.get(
                     'conference') + '", "customer":"' + request.values.get(
                     "customer") + '", "customer_taskSid":"' + request.values.get('taskSid') + '"}')
@@ -288,9 +289,7 @@ def transferToManager():
 
     response = VoiceResponse()
     dial = Dial()
-
     dial.conference(request.values.get('conference'))
-
     response.append(dial)
 
     return Response(str(response), mimetype='text/xml')
@@ -338,7 +337,7 @@ def agentChat():
 def escalateChat():
 
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid="WW4af8717df650b33eaaf1b9e5f52d8014", task_channel="chat",
+        .create(workflow_sid="workflow_mngr", task_channel="chat",
                 attributes='{"selected_product":"manager", "escalation_type": "chat", "channel":"' + request.values.get("channel") + '"}')
     print("Escalation to manager created " + task.sid)
     task_sid = {"TaskSid": task.sid}
@@ -350,7 +349,7 @@ def returnTranscript(charset='utf-8'):
     messages = []
     get_transcript = client.chat \
         .services(chat_service) \
-        .channels("CHfbb449d4e45840a08c6dbf3bb1cf392d") \
+        .channels(request.values.get("channel")) \
         .messages \
         .list()
 
