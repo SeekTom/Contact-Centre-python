@@ -259,7 +259,7 @@ def transferCall():
     # add new attributes on the task for customer callsid, customer tasksid and conference
 
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid="WW4af8717df650b33eaaf1b9e5f52d8014",
+        .create(workflow_sid=workflow_sid,
                 attributes='{"selected_product":"manager", "conference":"' + request.values.get(
                     'conference') + '", "customer":"' + request.values.get(
                     "customer") + '", "customer_taskSid":"' + request.values.get('taskSid') + '"}')
