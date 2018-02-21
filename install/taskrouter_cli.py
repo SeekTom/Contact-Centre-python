@@ -152,6 +152,13 @@ if(args.action == 'delete'):
     
     client = Client(account_sid, auth_token)
     workspace = client.taskrouter.workspaces(args.ws_sid).fetch()
+    # delete any tasks still pending
+    tasks = workspace.tasks.list(assignment_status="pending")
+    if tasks:
+        print("Pending tasks found - deleting")
+        for task in tasks:
+            print('  ' + task.sid + ' in ' + task.task_queue_friendly_name)
+            task.delete()
 
     success = client.taskrouter.workspaces(args.ws_sid).delete()
     if(success):
