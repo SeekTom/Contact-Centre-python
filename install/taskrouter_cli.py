@@ -41,25 +41,21 @@ init_taskqueues = [
         'friendly_name'        : 'Support',
         'max_reserved_workers' : 10,
         'target_workers'       : 'skills HAS "support"',
-        'env_var'              : 'TWILIO_ACME_SUPPORT_WORKFLOW_SID'
     },
     {
         'friendly_name'        : 'Billing',
         'max_reserved_workers' : 10,
         'target_workers'       : 'skills HAS "billing"',
-        'env_var'              : 'TWILIO_ACME_BILLING_WORKFLOW_SID'
     },
     {
         'friendly_name'        : 'Sales',
         'max_reserved_workers' : 10,
         'target_workers'       : 'skills HAS "sales"',
-        'env_var'              : 'TWILIO_ACME_SALES_WORKFLOW_SID'
     },
     {
         'friendly_name'        : 'Off Hours',
         'max_reserved_workers' : 10,
         'target_workers'       : 'skills HAS "OOO"',
-        'env_var'              : 'TWILIO_ACME_OOO_SID'
     },
     {
         'friendly_name'        : 'Managers',
@@ -235,12 +231,11 @@ if(args.action == 'init'):
         # Build dictionary of TaskQueue SIDs
         taskqueue_sid[init_tq['friendly_name']] = taskqueue.sid
         print('  TaskQueue ' + str(taskqueue.friendly_name) + ' : ' + str(taskqueue.sid) + ' has been created.')
-        if(args.env and 'env_var' in init_tq):
-            env.update({init_tq['env_var'] : taskqueue.sid})
 
     init_workflows = [
         {
             'friendly_name' : 'Support Workflow',
+            'env_var'       : 'TWILIO_ACME_SUPPORT_WORKFLOW_SID',
             'configuration' : {
                 'task_routing': {
                     'filters': [
@@ -267,6 +262,8 @@ if(args.action == 'init'):
             configuration=json.dumps(init_wf['configuration'])
         )
         print('  Workflow ' + str(workflow.friendly_name) + ' : ' + str(workflow.sid) + ' has been created.')
+        if(args.env and 'env_var' in init_wf):
+            env.update({init_wf['env_var'] : workflow.sid})
 
     print('Workspace ' + str(args.ws_name) + ' : ' + str(workspace.sid) + ' has been created.')
 
