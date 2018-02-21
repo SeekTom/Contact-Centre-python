@@ -252,6 +252,21 @@ if(args.action == 'init'):
                 }
             }
         },
+        {
+            'friendly_name' : 'Manager Workflow',
+            'env_var'       : 'TWILIO_ACME_MANAGER_WORKFLOW_SID',
+            'configuration' : {
+                'task_routing': {
+                    'filters': [
+                        {
+                            'filter_friendly_name': 'Manager',
+                            'expression': 'selected_product == "manager"',
+                            'targets': [{'queue': taskqueue_sid['Managers']}]
+                        },
+                    ],
+                }
+            }
+        },
     ]
 
     print('Creating Workflows...')
