@@ -3,6 +3,7 @@
 from twilio.rest import Client
 import os
 import json
+import ntpath
 import argparse
 
 account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
@@ -11,7 +12,7 @@ auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
 init_workers = [
     {
         'friendly_name' : 'Francisco',
-        'attributes'    : '{"skills":["support","billing","sales","chat"], "languages":["en","es","fr"], "contact_uri":"client:$WORKER_SID$"}',
+        'attributes'    : '{"skills":["support","billing","sales"], "languages":["en","es","fr"], "contact_uri":"client:$WORKER_SID$"}',
         'channels'      : ['voice', 'chat']
     },
     {
@@ -21,11 +22,13 @@ init_workers = [
     },
     {
         'friendly_name' : 'Susan',
-        'attributes'    : '{"skills":["manager"], "contact_uri":"client:$WORKER_SID$"}'
+        'attributes'    : '{"skills":["manager"], "contact_uri":"client:$WORKER_SID$"}',
+        'channels'      : ['chat']
     },
     {
         'friendly_name' : 'Giselle',
-        'attributes'    : '{"skills":["support", "OOO"], "languages":["en", "fr"], "contact_uri":"client:$WORKER_SID$"}'
+        'attributes'    : '{"skills":["support", "OOO"], "languages":["en", "fr"], "contact_uri":"client:$WORKER_SID$"}',
+        'channels'      : ['voice']
     },
     {
         'friendly_name' : 'Manny',
@@ -37,22 +40,22 @@ init_taskqueues = [
     {
         'friendly_name'        : 'Support',
         'max_reserved_workers' : 10,
-        'target_workers'       : 'skills HAS "support"'
+        'target_workers'       : 'skills HAS "support"',
     },
     {
         'friendly_name'        : 'Billing',
         'max_reserved_workers' : 10,
-        'target_workers'       : 'skills HAS "billing"'
+        'target_workers'       : 'skills HAS "billing"',
     },
     {
         'friendly_name'        : 'Sales',
         'max_reserved_workers' : 10,
-        'target_workers'       : 'skills HAS "sales"'
+        'target_workers'       : 'skills HAS "sales"',
     },
     {
         'friendly_name'        : 'Off Hours',
         'max_reserved_workers' : 10,
-        'target_workers'       : 'skills HAS "OOO"'
+        'target_workers'       : 'skills HAS "OOO"',
     },
     {
         'friendly_name'        : 'Managers',
@@ -61,20 +64,23 @@ init_taskqueues = [
     },
 ]
 
+# For environment variables output (also see 'env_var' key in init_taskqueues)
+ws_env_var = 'TWILIO_ACME_WORKSPACE_SID'
+
 parser = argparse.ArgumentParser(description="Twilio TaskRouter Console Manager")
 parser.add_argument("-d", "--delete", help="Delete Workspace and all of its content", dest='action', action='store_const', const='delete')
 parser.add_argument("-l", "--list", help="List existing Workspaces", dest='action', action='store_const', const='list')
 parser.add_argument("-i", "--init", help="Initialize new Workspace", dest='action', action='store_const', const='init')
+parser.add_argument("-e", "--env", help="Also print suggested env setup for Workspace when initializing", dest='env', action='store_const', const=True)
 parser.add_argument('--sid', help='Workspace SID', dest='ws_sid')
 parser.add_argument('--name', help='Workspace Name', dest='ws_name')
 parser.add_argument('--url', help='Event Callback URL', dest='ws_url')
 
+
 args = parser.parse_args()
-#print(args)
 if(args.action == None):
     parser.print_help()
     exit
-
 
 # List
 if(args.action == 'list'):
@@ -142,6 +148,13 @@ if(args.action == 'delete'):
     
     client = Client(account_sid, auth_token)
     workspace = client.taskrouter.workspaces(args.ws_sid).fetch()
+    # delete any tasks still pending
+    tasks = workspace.tasks.list(assignment_status="pending")
+    if tasks:
+        print("Pending tasks found - deleting")
+        for task in tasks:
+            print('  ' + task.sid + ' in ' + task.task_queue_friendly_name)
+            task.delete()
 
     success = client.taskrouter.workspaces(args.ws_sid).delete()
     if(success):
@@ -163,6 +176,7 @@ if(args.action == 'init'):
         event_callback_url=args.ws_url,
         template='FIFO'
     )
+    env = { ws_env_var : workspace.sid }
 
     wrapup = client.taskrouter.workspaces(workspace.sid).activities \
         .create(friendly_name='WrapUp', available='false')
@@ -221,6 +235,7 @@ if(args.action == 'init'):
     init_workflows = [
         {
             'friendly_name' : 'Support Workflow',
+            'env_var'       : 'TWILIO_ACME_SUPPORT_WORKFLOW_SID',
             'configuration' : {
                 'task_routing': {
                     'filters': [
@@ -247,5 +262,16 @@ if(args.action == 'init'):
             configuration=json.dumps(init_wf['configuration'])
         )
         print('  Workflow ' + str(workflow.friendly_name) + ' : ' + str(workflow.sid) + ' has been created.')
+        if(args.env and 'env_var' in init_wf):
+            env.update({init_wf['env_var'] : workflow.sid})
 
     print('Workspace ' + str(args.ws_name) + ' : ' + str(workspace.sid) + ' has been created.')
+
+    if(args.env):
+        shell = ntpath.basename(os.environ['SHELL'])
+        print('\nEnvironment variables for ' + shell)
+        for key, value in env.items():
+            if shell=='fish':
+                print('set -x ' + key + ' ' + value)
+            else:
+                print('export ' + key + '=' + value)

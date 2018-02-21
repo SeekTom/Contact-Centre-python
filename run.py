@@ -161,15 +161,15 @@ def call():
 def generate_agent_list_view():
     # Create arrays of workers and share that with the template so that workers can be queried on the client side
 
-    # All workers can do voice
-    all_workers = client.taskrouter.workspaces(workspace_sid).workers.list()
+    # get workers with enabled voice-channel
+    voice_workers = client.taskrouter.workspaces(workspace_sid) \
+        .workers.list(target_workers_expression="worker.channel.voice.configured_capacity > 0")
 
-    # Only some workers can do chat
-    expression = "skills HAS 'chat'"
+    # get workers with enabled chat-channel
     chat_workers = client.taskrouter.workspaces(workspace_sid) \
-        .workers.list(target_workers_expression=expression)
+        .workers.list(target_workers_expression="worker.channel.chat.configured_capacity > 0")
 
-    return render_template('agent_list.html', voice_workers=all_workers, chat_workers=chat_workers)
+    return render_template('agent_list.html', voice_workers=voice_workers, chat_workers=chat_workers)
 
 
 @app.route("/agents", methods=['GET'])
@@ -259,7 +259,7 @@ def transferCall():
     # add new attributes on the task for customer callsid, customer tasksid and conference
 
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid="WW4af8717df650b33eaaf1b9e5f52d8014",
+        .create(workflow_sid=workflow_sid,
                 attributes='{"selected_product":"manager", "conference":"' + request.values.get(
                     'conference') + '", "customer":"' + request.values.get(
                     "customer") + '", "customer_taskSid":"' + request.values.get('taskSid') + '"}')
@@ -310,10 +310,9 @@ def createCustomerChannel():
 
 @app.route('/createChatTask/', methods=['POST', 'GET'])
 def createChatTask():
-
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid="WW5bc2a216556a9cc2e8d4b8507e8fc502", task_channel="chat",
-                attributes='{"selected_product":"chat", "channel":"'+ request.values.get("channel") +'"}')
+        .create(workflow_sid=workflow_sid, task_channel="chat",
+                attributes='{"selected_product":"chat", "channel":"' + request.values.get("channel") + '"}')
     task_sid = {"TaskSid": task.sid}
     return jsonify(task_sid)
 
@@ -331,10 +330,10 @@ def agentChat():
     worker_capability.allow_update_activities()  # allow agent to update their activity status e.g. go offline
     worker_capability.allow_update_reservations()  # allow agents to update reservations e.g. accept/reject
 
-    worker_token = worker_capability.to_jwt(ttl=28800)
+    worker_token = worker_capability.to_jwt(ttl=28800)  # 8 hours
 
-    return render_template('agent_desktop_chat.html', worker_token=worker_token.decode(
-        "utf-8"))
+    return render_template('agent_desktop_chat.html', worker_token=worker_token.decode("utf-8"))
+
 @app.route('/escalateChat/', methods=['POST'])
 def escalateChat():
 
