@@ -44,7 +44,7 @@ for a in activities:
 
 def return_work_space(digits):
 
-    #query user input and assign the correct workspace
+    #query user input and assign the correct workflow
 
     digit_pressed = digits
     if digit_pressed == "1":
@@ -118,9 +118,9 @@ def dept():
     dept_lang = request.values['lang']
     digit = request.values['digit']
     say_dict = {
-      'es': ["Para sales oprime uno", "Para support oprime duo", "Para billing oprime tres"],
+      'es': ["Para ventas oprime uno", "Para apoyo oprime duo", "Para finanzas oprime tres"],
       'en': ["For sales press one", "For support press two", "For billing press three"],
-      'fr': [u"Pour sales pressé un", u"Pour support pressé deux", u"Pour billing pressé tres"]
+      'fr': [u"Pour ventes pressé un", u"Pour soutien pressé deux", u"Pour finances pressé tres"]
     }
     with resp.gather(num_digits=digit, action="/enqueue_call?lang="+dept_lang, timeout="10") as g:
         g.say(say_dict.get(dept_lang)[0], language=dept_lang)
@@ -129,7 +129,6 @@ def dept():
     return str(resp)
 
 # Enqueue calls to tasks based on language
-#Consider refactoring into single function - DONE
 
 @app.route("/enqueue_call", methods=["GET", "POST"])
 def enqueue_call():
@@ -226,7 +225,7 @@ def noClientView():
 @app.route("/conference_callback", methods=['GET', 'POST'])
 def handle_callback():
     #monitor for when the customer leaves a conference and output something to the console
-    if 'StatusCallbackEvent' in request.values:
+    if 'StatusCallbackEvent' in request.values and 'CallSid' in request.values:
 
         cb_event = request.values.get('StatusCallbackEvent')
         conf_moderator = request.values.get('StartConferenceOnEnter')
