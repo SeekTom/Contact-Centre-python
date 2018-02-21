@@ -9,14 +9,14 @@
 <body>
 <div id="workers">
     <h2>A selection of voice workers</h2>
-    {% for worker in voice_workers %}
-      <a href="/agents?WorkerSid={{ worker.sid }}">{{ worker.friendly_name }}</a><br />
+    {% for voice_worker in voice_workers %}
+      <a href="/agents?WorkerSid={{ voice_worker.sid }}">{{ voice_worker.friendly_name }}</a> <font size="-1">({{ voice_worker.activity_name }})</font><br />
     {% endfor %}
 </div>
 <div id="workers">
     <h2>A selection of chat workers</h2>
-    {% for c_worker in chat_workers %}
-      <a href="/agent_chat?WorkerSid={{ c_worker.sid }}">{{ c_worker.friendly_name }}</a><br />
+    {% for chat_worker in chat_workers %}
+      <a href="/agent_chat?WorkerSid={{ chat_worker.sid }}">{{ chat_worker.friendly_name }}</a> <font size="-1">({{ chat_worker.activity_name }})</font><br />
     {% endfor %}
 </div>
 </body>
