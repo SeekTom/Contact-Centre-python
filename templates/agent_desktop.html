@@ -74,17 +74,21 @@
 
         function hangup() {
             Twilio.Device.disconnectAll();
-            
-            logger(worker.friendlyName + " has ended the call");
-            ReservationObject.task.complete();
-            
-            //if (ReservationObject.task.attributes.selected_product === "manager"){
-            //    logger(worker.friendlyName + " has ended the call");
-              //  ReservationObject.task.complete();
-            //}
-            //else{
-            //    logger(worker.friendlyName + " has ended the call");
-            //}
+             ReservationObject.task.complete();
+
+             worker.update("ActivitySid", "{{ activity['WrapUp'] }}", function (error, worker) {
+
+                 logger(worker.friendlyName + " has ended the call");
+
+
+                if (error) {
+                    console.log(error.code);
+                    console.log(error.message);
+                } else {
+                    console.log(worker.activityName);
+                }
+            });
+
             document.getElementById("btn_hangup").style.display = "none";
             document.getElementById("btn_online").style.display = "none";
             document.getElementById("btn_offline").style.display = "inline";
@@ -154,8 +158,11 @@
                 logger("-----");
                 logger("You have been reserved to handle a call!");
                 logger("Call from: " + reservation.task.attributes.from);
-                logger("Selected language: " + reservation.task.attributes.selected_language);
-                logger("Selected language: " + reservation.task.attributes.selected_product);
+                if (reservation.task.attributes.selected_product !== "manager"){
+                  logger("Selected language: " + reservation.task.attributes.selected_language);
+
+                  }
+                logger("Customer Request: " + reservation.task.attributes.selected_product);
                 logger("-----");
                 logger(reservation.sid);
                 ReservationObject = reservation;
@@ -238,10 +245,10 @@
                 // Manager escalation, issue call instuction
                 console.log("manager task");
                 console.log(ReservationObject);
-                console.log("{{ base_url }}/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid)
+                console.log(window.location.protocol+"//"+window.location.hostname );
                     ReservationObject.call(
-                    "+448081645567",
-                    "http://acme-corp-demo.herokuapp.com/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid,
+                    "{{ caller_id }}",
+                        window.location.protocol+"//"+window.location.hostname + "/transferTwiml?conference=" +ReservationObject.task.attributes.customer_taskSid,
                     "https://requestb.in/1128c331", // Replace with your own url for conferenceEvents
                     "false",
 
@@ -255,10 +262,10 @@
                         console.log("reservation called the escalation contact");
                     }
                 );
-                ReservationObject.accept(); // Call instruction requires you to manually accept the Reservation prior to issuing the instruction
-
+                 ReservationObject.accept(); // Call instruction requires you to manually accept the Reservation prior to issuing the instruction
+                
                  document.getElementById("btn_hangupManager").style.display = "inline";
-
+                 document.getElementById("btn_escalate").style.direction = "none";
                 unmuteCaller(ReservationObject.task.attributes.customer, ReservationObject.task.attributes.conference);
             }
             else {
@@ -270,7 +277,7 @@
                     "Timeout": "30",
                     "Record": "true",
                     "RecordingCallbackUrl": "https://requestb.in/1128c331", //replace with your own url
-                    "ConferenceStatusCallback": "{{ base_url }}/conference_callback",
+                    "ConferenceStatusCallback": window.location.host+"/conference_callback",
                     "ConferenceStatusCallbackEvent": "start,end,join,leave"
                 };
 

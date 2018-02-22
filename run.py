@@ -242,9 +242,6 @@ def handle_callback():
                 print("Something else happened: " + cb_event)
     return render_template('status.html')
 
-
-
-
 @app.route("/callTransfer", methods=['GET', 'POST'])
 def transferCall():
     # transfer call
