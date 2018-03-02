@@ -91,7 +91,7 @@ if(args.action == 'list'):
         workspaces = client.taskrouter.workspaces.list()
 
         for workspace in workspaces:
-            print str(workspace.friendly_name), ':', str(workspace.sid)
+            print(str(workspace.friendly_name), ':', str(workspace.sid))
 
     # If SID was provided, list details about that one Workspace
     else:
@@ -179,7 +179,7 @@ if(args.action == 'init'):
     env = { ws_env_var : workspace.sid }
 
     wrapup = client.taskrouter.workspaces(workspace.sid).activities \
-        .create(friendly_name='WrapUp', available='false')
+        .create(friendly_name='WrapUp', available=False)
     print('Default WrapUp : ' + wrapup.sid + ' activity has been created.')
 
     # Build dictionary of Activity SIDs
