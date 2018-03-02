@@ -74,17 +74,19 @@
 
         function hangup() {
             Twilio.Device.disconnectAll();
-            
-            logger(worker.friendlyName + " has ended the call");
             ReservationObject.task.complete();
-            
-            //if (ReservationObject.task.attributes.selected_product === "manager"){
-            //    logger(worker.friendlyName + " has ended the call");
-              //  ReservationObject.task.complete();
-            //}
-            //else{
-            //    logger(worker.friendlyName + " has ended the call");
-            //}
+
+            worker.update("ActivitySid", "{{ activity['WrapUp'] }}", function (error, worker) {
+                logger(worker.friendlyName + " has ended the call");
+
+                if (error) {
+                    console.log(error.code);
+                    console.log(error.message);
+                } else {
+                    console.log(worker.activityName);
+                }
+            });
+
             document.getElementById("btn_hangup").style.display = "none";
             document.getElementById("btn_online").style.display = "none";
             document.getElementById("btn_offline").style.display = "inline";
@@ -162,7 +164,7 @@
                 logger("You have been reserved to handle a call!");
                 logger("Call from: " + reservation.task.attributes.from);
                 logger("Selected language: " + reservation.task.attributes.selected_language);
-                logger("Selected product: " + reservation.task.attributes.selected_product);
+                logger("Customer request: " + reservation.task.attributes.selected_product);
                 logger("-----");
                 logger(reservation.sid);
                 ReservationObject = reservation;
@@ -231,7 +233,7 @@
             if (available === true) {
                 statusDiv = document.getElementById("worker_status").style.color = "#00BB00";
             } else {
-                statusDiv = document.getElementById("worker_status").style.color = "#AA0000";
+                statusDiv = document.getElementById("worker_status").style.color = "#BB0000";
             }
             if (activityName === "Offline") {
                 document.getElementById("btn_online").style.display = "inline";
@@ -246,16 +248,16 @@
         function acceptReservation() {
             if (ReservationObject.task.attributes.selected_product === "manager") {
                 // Manager escalation, issue call instuction
-                console.log("manager task " + ReservationObject.task.attributes.from);
+                console.log("manager task");
                 console.log(ReservationObject);
-                console.log("{{ base_url }}/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid)
+                console.log("/" + window.location.host + "/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid)
                     ReservationObject.call(
                     // callFrom
-                    (ReservationObject.task.attributes.from ? ReservationObject.task.attributes.from: ""),
+                    "{{ caller_id }}",  // CC's phone number
                     // callUrl - URI that is executed on the answering Worker's leg
-                    "{{ base_url }}/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid,
+                    "/" + window.location.host + "/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid,
                     // callStatusCallbackUrl (optional) - status callback url
-                    "{{ base_url }}/conference_callback",
+                    "/" + window.location.host + "/conference_callback",
                     // callAccept (optional) - accept the task before initiating call
                     "false",
                     // callRecord (optional) - record-from-answer or false
@@ -272,20 +274,20 @@
                 );
                 ReservationObject.accept(); // Call instruction requires you to manually accept the Reservation prior to issuing the instruction
 
-                 document.getElementById("btn_hangupManager").style.display = "inline";
-
+                document.getElementById("btn_hangupManager").style.display = "inline";
+                document.getElementById("btn_escalate").style.direction = "none";
                 unmuteCaller(ReservationObject.task.attributes.customer, ReservationObject.task.attributes.conference);
             }
             else {
                 
                 // not a transfer, simply create a new conference and join customer and worker into it
                 var options = {
-                    "From": "{{ caller_id }}",
+                    "From": "{{ caller_id }}",  // CC's phone number
                     "PostWorkActivitySid": "{{ activity['WrapUp'] }}",
                     "Timeout": "30",
                     "ConferenceRecord": "true",
-                    "ConferenceRecordingStatusCallback": "{{ base_url }}/recording_callback",
-                    "ConferenceStatusCallback": "{{ base_url }}/conference_callback",
+                    "ConferenceRecordingStatusCallback": "/" + window.location.host + "/recording_callback",
+                    "ConferenceStatusCallback": "/" + window.location.host + "/conference_callback",
                     "ConferenceStatusCallbackEvent": "start,end,join,leave"
                 };
 
@@ -310,7 +312,7 @@
             document.getElementById("btn_unmute").style.display = "inline";
             document.getElementById("btn_escalate").style.display = "inline";
 
-            updateUIStatus("On a call");
+            updateUIStatus("On a call", false);
 
         }
 

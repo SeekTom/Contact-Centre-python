@@ -12,8 +12,6 @@ import os
 
 app = Flask(__name__, static_folder='app/static')
 
-base_url = os.environ.get("TWILIO_ACME_BASE_URL")
-
 # Your Account Sid and Auth Token from twilio.com/user/account
 account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
 auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
@@ -29,8 +27,8 @@ api_key = os.environ.get("TWILIO_ACME_CHAT_API_KEY")
 api_secret = os.environ.get("TWILIO_ACME_CHAT_SECRET")
 chat_service = os.environ.get("TWILIO_ACME_CHAT_SERVICE_SID")
 
-twiml_app = os.environ.get("TWILIO_ACME_TWIML_APP_SID") #Twilio client application SID
-caller_id = os.environ.get("TWILIO_ACME_CALLERID") #
+twiml_app = os.environ.get("TWILIO_ACME_TWIML_APP_SID") # Twilio client application SID
+caller_id = os.environ.get("TWILIO_ACME_CALLERID") # Contact Center's phone number to be used in outbound communication
 
 client = Client(account_sid, auth_token)
 
@@ -44,7 +42,7 @@ for a in activities:
 
 def return_work_space(digits):
 
-    #query user input and assign the correct workspace
+    # query user input and assign the correct workflow
 
     digit_pressed = digits
     if digit_pressed == "1":
@@ -118,9 +116,9 @@ def dept():
     dept_lang = request.values['lang']
     digit = request.values['digit']
     say_dict = {
-      'es': ["Para sales oprime uno", "Para support oprime duo", "Para billing oprime tres"],
+      'es': ["Para ventas oprime uno", "Para apoyo oprime duo", "Para finanzas oprime tres"],
       'en': ["For sales press one", "For support press two", "For billing press three"],
-      'fr': [u"Pour sales pressé un", u"Pour support pressé deux", u"Pour billing pressé tres"]
+      'fr': [u"Pour ventes pressé un", u"Pour soutien pressé deux", u"Pour finances pressé tres"]
     }
     with resp.gather(num_digits=digit, action="/enqueue_call?lang="+dept_lang, timeout="10") as g:
         g.say(say_dict.get(dept_lang)[0], language=dept_lang)
@@ -129,7 +127,6 @@ def dept():
     return str(resp)
 
 # Enqueue calls to tasks based on language
-#Consider refactoring into single function - DONE
 
 @app.route("/enqueue_call", methods=["GET", "POST"])
 def enqueue_call():
@@ -198,7 +195,7 @@ def generate_view(charset='utf-8'):
     return render_template('agent_desktop.html', token=client_token.decode("utf-8"),
                            worker_token=worker_token.decode("utf-8"),
                            client_name=worker_sid, activity=activity,
-                           caller_id=caller_id, base_url=base_url)
+                           caller_id=caller_id)
 
 
 @app.route("/agents/noclient", methods=['GET', 'POST'])
@@ -228,7 +225,6 @@ def conference_callback():
     #monitor for when the customer leaves a conference and output something to the console
     if 'StatusCallbackEvent' in request.values:
         cb_event = request.values.get('StatusCallbackEvent')
-        print('event:' + cb_event)
         conf_moderator = request.values.get('StartConferenceOnEnter')
 
         if request.values.get("CallSid"):
@@ -263,8 +259,9 @@ def transferCall():
         .update(hold=True)
 
     # create new task for the manager escalation
-    # todo: manager workflow is set manually for now, scope for making that a variable based on who the worker is selecting to escalate to in the next version
-    # add new attributes on the task for customer callsid, customer tasksid and conference
+    # add new attributes on the task for customer from number, customer tasksid, selected_language and conference SID
+    
+    # todo: manager workflow is set manually for now, scope for making that a variable based on who the worker is selecting to escalate to in the next version   
     task = client.taskrouter.workspaces(workspace_sid).tasks \
         .create(workflow_sid=workflow_mngr, task_channel="voice",
                 attributes='{"selected_product":"manager' +
