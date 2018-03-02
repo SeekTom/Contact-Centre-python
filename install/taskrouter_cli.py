@@ -91,7 +91,7 @@ if(args.action == 'list'):
         workspaces = client.taskrouter.workspaces.list()
 
         for workspace in workspaces:
-            print(str(workspace.friendly_name), ':', str(workspace.sid))
+            print(str(workspace.friendly_name) + ' : ' + str(workspace.sid))
 
     # If SID was provided, list details about that one Workspace
     else:
