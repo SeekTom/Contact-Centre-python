@@ -16,12 +16,12 @@ app = Flask(__name__, static_folder='app/static')
 account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
 auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
 
-workspace_sid = os.environ.get("TWILIO_ACME_WORKSPACE_SID") #workspace
+workspace_sid = os.environ.get("TWILIO_ACME_WORKSPACE_SID") # workspace
 workflow_sid = os.environ.get("TWILIO_ACME_SUPPORT_WORKFLOW_SID")  # support workflow
 workflow_sales_sid = os.environ.get("TWILIO_ACME_SALES_WORKFLOW_SID")  # sales workflow
 workflow_billing_sid = os.environ.get("TWILIO_ACME_BILLING_WORKFLOW_SID")  # billing workflow
-workflow_OOO_sid = os.environ.get("TWILIO_ACME_OOO_SID") #out of office workflow
-workflow_mngr = os.environ.get("TWILIO_ACME_MANAGER_WORKFLOW_SID") #manager escalation workflow
+workflow_OOO_sid = os.environ.get("TWILIO_ACME_OOO_SID") # out of office workflow
+workflow_mngr = os.environ.get("TWILIO_ACME_MANAGER_WORKFLOW_SID") # manager escalation workflow
 
 api_key = os.environ.get("TWILIO_ACME_CHAT_API_KEY")
 api_secret = os.environ.get("TWILIO_ACME_CHAT_SECRET")

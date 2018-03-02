@@ -151,14 +151,12 @@
                     }
                 }
 
-
                 if (worker.activityName === "Offline" || worker.activityName === "WrapUp") {
                     document.getElementById("btn_online").style.display = "inline";
                     document.getElementById("btn_offline").style.display = "none";
                 }
-
-
             });
+
             worker.on('reservation.created', function (reservation) {
                 logger("-----");
                 logger("You have been reserved to handle a call!");
@@ -219,7 +217,6 @@
                     console.log(worker.activityName); // "Offline"
                 }
             });
-
 
             document.getElementById("btn_offline").style.display = "none";
             document.getElementById("btn_mute").style.display = "none";
@@ -316,11 +313,9 @@
             document.getElementById("btn_escalate").style.display = "inline";
 
             updateUIStatus("On a call", false);
-
         }
 
         function rejectReservation() {
-
             ReservationObject.reject();
             document.getElementById("btn_reject").style.display = "none";
             document.getElementById("btn_accept").style.display = "none";
@@ -340,8 +335,6 @@
                 selected_language: (ReservationObject.task.attributes.selected_language ? ReservationObject.task.attributes.selected_language : ''),
                 from: (ReservationObject.task.attributes.from ? ReservationObject.task.attributes.from : '')
             });
-
-
         }
 
         function muteCaller() {
@@ -350,8 +343,6 @@
                 conference: ReservationObject.task.attributes.conference.sid,
                 muted: "True"
             });
-
-
         }
 
         function unmuteCaller(customer) {
@@ -371,8 +362,6 @@
                     muted: "False"
                 });
             }
-
-
         }
 
         function logger(message) {
@@ -380,7 +369,6 @@
             log.value += "\n> " + message;
             log.scrollTop = log.scrollHeight;
         }
-
 
         window.onload = function () {
             // Initialize TaskRouter.js on page load using window.workerToken -
