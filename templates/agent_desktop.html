@@ -123,6 +123,13 @@
         function registerTaskRouterCallbacks() {
             worker.on('ready', function (worker) {
                 logger("Successfully registered as: " + worker.friendlyName);
+                document.querySelector('h2').innerHTML = "ACME agent desktop: " + worker.friendlyName;
+                if(worker.attributes.hasOwnProperty('skills')) {
+                    logger("Skills: " + worker.attributes['skills']);
+                }
+                if(worker.attributes.hasOwnProperty('languages')) {
+                    logger("Languages: " + worker.attributes['languages']);
+                }
                 logger("Current activity is: " + worker.activityName);
                 updateUIStatus(worker.activityName);
             });
