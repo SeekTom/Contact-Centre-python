@@ -12,25 +12,23 @@ import os
 
 app = Flask(__name__, static_folder='app/static')
 
-base_url = os.environ.get("TWILIO_ACME_BASE_URL")
-
 # Your Account Sid and Auth Token from twilio.com/user/account
 account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
 auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
 
-workspace_sid = os.environ.get("TWILIO_ACME_WORKSPACE_SID") #workspace
+workspace_sid = os.environ.get("TWILIO_ACME_WORKSPACE_SID") # workspace
 workflow_sid = os.environ.get("TWILIO_ACME_SUPPORT_WORKFLOW_SID")  # support workflow
 workflow_sales_sid = os.environ.get("TWILIO_ACME_SALES_WORKFLOW_SID")  # sales workflow
 workflow_billing_sid = os.environ.get("TWILIO_ACME_BILLING_WORKFLOW_SID")  # billing workflow
-workflow_OOO_sid = os.environ.get("TWILIO_ACME_OOO_SID") #out of office workflow
-workflow_mngr = os.environ.get("TWILIO_ACME_MANAGER_WORKFLOW_SID") #manager escalation workflow
+workflow_OOO_sid = os.environ.get("TWILIO_ACME_OOO_SID") # out of office workflow
+workflow_mngr = os.environ.get("TWILIO_ACME_MANAGER_WORKFLOW_SID") # manager escalation workflow
 
 api_key = os.environ.get("TWILIO_ACME_CHAT_API_KEY")
 api_secret = os.environ.get("TWILIO_ACME_CHAT_SECRET")
 chat_service = os.environ.get("TWILIO_ACME_CHAT_SERVICE_SID")
 
-twiml_app = os.environ.get("TWILIO_ACME_TWIML_APP_SID") #Twilio client application SID
-caller_id = os.environ.get("TWILIO_ACME_CALLERID") #
+twiml_app = os.environ.get("TWILIO_ACME_TWIML_APP_SID") # Twilio client application SID
+caller_id = os.environ.get("TWILIO_ACME_CALLERID") # Contact Center's phone number to be used in outbound communication
 
 client = Client(account_sid, auth_token)
 
@@ -43,6 +41,7 @@ for a in activities:
 # private functions
 
 def return_work_space(digits):
+
 
     #query user input and assign the correct workflow
 
@@ -196,8 +195,8 @@ def generate_view(charset='utf-8'):
     # render client/worker tokens to the agent desktop so that they can be queried on the client side
     return render_template('agent_desktop.html', token=client_token.decode("utf-8"),
                            worker_token=worker_token.decode("utf-8"),
-                           client_name=worker_sid, activity=activity,
-                           caller_id=caller_id, base_url=base_url)
+                           client_=worker_sid, activity=activity,
+                           caller_id=caller_id)
 
 
 @app.route("/agents/noclient", methods=['GET', 'POST'])
@@ -223,43 +222,59 @@ def noClientView():
 # Callbacks
 
 @app.route("/conference_callback", methods=['GET', 'POST'])
-def handle_callback():
+def conference_callback():
     #monitor for when the customer leaves a conference and output something to the console
+
     if 'StatusCallbackEvent' in request.values and 'CallSid' in request.values:
 
         cb_event = request.values.get('StatusCallbackEvent')
         conf_moderator = request.values.get('StartConferenceOnEnter')
-        call = client.calls(request.values.get("CallSid")).fetch()
-        caller = call.from_
 
-        if cb_event == "participant-leave":
-            if conf_moderator == "true":
-                message = client.messages.create(
-                    to=caller,
-                    from_=caller_id,
-                    body="Thanks for calling OwlCorp, how satisfied were you with your designated agent on a scale of 1 to 10?")
-            else:
-                print("Something else happened: " + cb_event)
+        if request.values.get("CallSid"):
+            call = client.calls(request.values.get("CallSid")).fetch()
+            caller = call.from_
+
+            # send a survey message after the call, but make sure to exclude escallations
+            if cb_event == "participant-leave" and caller != caller_id:
+                if conf_moderator == "true":
+                    message = client.messages.create(
+                        to=caller,
+                        from_=caller_id,
+                        body="Thanks for calling OwlCorp, how satisfied were you with your designated agent on a scale of 1 to 10?")
+                else:
+                    print("Something else happened: " + cb_event)
+        return '', 204
+    
     return render_template('status.html')
+
+@app.route("/recording_callback", methods=['GET', 'POST'])
+def recording_callback():
+    if request.values.get('RecordingUrl'):
+        print('received recording url: ' + request.values.get('RecordingUrl'))
+        return '', 204
+
 
 @app.route("/callTransfer", methods=['GET', 'POST'])
 def transferCall():
     # transfer call
     # put the customer call on hold
-
     participant = client \
         .conferences(request.values.get('conference')) \
         .participants(request.values.get('participant')) \
         .update(hold=True)
-    # create new task for the manager escalation
-    # manager workflow is set manually for now, scope for making that a variable based on who the worker is selecting to escalate to in the next version
-    # add new attributes on the task for customer callsid, customer tasksid and conference
 
+    # create new task for the manager escalation
+    # add new attributes on the task for customer from number, customer tasksid, selected_language and conference SID
+    
+    # todo: manager workflow is set manually for now, scope for making that a variable based on who the worker is selecting to escalate to in the next version   
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid=workflow_mngr,
-                attributes='{"selected_product":"manager", "conference":"' + request.values.get(
-                    'conference') + '", "customer":"' + request.values.get(
-                    "customer") + '", "customer_taskSid":"' + request.values.get('taskSid') + '"}')
+        .create(workflow_sid=workflow_mngr, task_channel="voice",
+                attributes='{"selected_product":"manager' +
+                    '", "selected_language":"' + request.values.get('selected_language') + 
+                    '", "conference":"' + request.values.get('conference') +
+                    '", "customer":"' + request.values.get('participant') + 
+                    '", "customer_taskSid":"' + request.values.get('taskSid') + 
+                    '", "from":"' + request.values.get('from') + '"}')
 
     resp = VoiceResponse
     return Response(str(resp), mimetype='text/xml')
@@ -281,7 +296,7 @@ def unmuteCall():
 
 @app.route("/transferTwiml", methods=['GET', 'POST'])
 def transferToManager():
-    #create TwiML that dials the customer conference add the manager in as a participant
+    # create TwiML that dials manager to customer conference as a participant
 
     response = VoiceResponse()
     dial = Dial()

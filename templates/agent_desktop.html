@@ -74,12 +74,11 @@
 
         function hangup() {
             Twilio.Device.disconnectAll();
-             ReservationObject.task.complete();
 
-             worker.update("ActivitySid", "{{ activity['WrapUp'] }}", function (error, worker) {
+            ReservationObject.task.complete();
 
-                 logger(worker.friendlyName + " has ended the call");
-
+            worker.update("ActivitySid", "{{ activity['WrapUp'] }}", function (error, worker) {
+                logger(worker.friendlyName + " has ended the call");
 
                 if (error) {
                     console.log(error.code);
@@ -127,15 +126,22 @@
         function registerTaskRouterCallbacks() {
             worker.on('ready', function (worker) {
                 logger("Successfully registered as: " + worker.friendlyName);
+                document.querySelector('h2').innerHTML = "ACME agent desktop: " + worker.friendlyName;
+                if(worker.attributes.hasOwnProperty('skills')) {
+                    logger("Skills: " + worker.attributes['skills']);
+                }
+                if(worker.attributes.hasOwnProperty('languages')) {
+                    logger("Languages: " + worker.attributes['languages']);
+                }
                 logger("Current activity is: " + worker.activityName);
-                updateUIStatus(worker.activityName);
+                updateUIStatus(worker.activityName, worker.available);
             });
 
             worker.on('activity.update', function (worker) {
 
                 logger("Worker activity changed to: " + worker.activityName);
                 var workerStatus = worker.activityName;
-                updateUIStatus(worker.activityName);
+                updateUIStatus(worker.activityName, worker.available);
 
                 if (worker.activitySid === "{{ activity['WrapUp'] }}") {
 
@@ -146,23 +152,25 @@
                     }
                 }
 
-
                 if (worker.activityName === "Offline" || worker.activityName === "WrapUp") {
                     document.getElementById("btn_online").style.display = "inline";
                     document.getElementById("btn_offline").style.display = "none";
                 }
-
-
             });
+
             worker.on('reservation.created', function (reservation) {
                 logger("-----");
                 logger("You have been reserved to handle a call!");
                 logger("Call from: " + reservation.task.attributes.from);
+
+                logger("Selected language: " + reservation.task.attributes.selected_language);
+                logger("Customer request: " + reservation.task.attributes.selected_product);
                 if (reservation.task.attributes.selected_product !== "manager"){
                   logger("Selected language: " + reservation.task.attributes.selected_language);
 
                   }
                 logger("Customer Request: " + reservation.task.attributes.selected_product);
+            
                 logger("-----");
                 logger(reservation.sid);
                 ReservationObject = reservation;
@@ -218,7 +226,6 @@
                 }
             });
 
-
             document.getElementById("btn_offline").style.display = "none";
             document.getElementById("btn_mute").style.display = "none";
             document.getElementById("btn_unmute").style.display = "none";
@@ -226,11 +233,14 @@
 
         }
 
-        function updateUIStatus(update) {
-
-            statusDiv = document.getElementById("worker_status").innerText = update;
-            if (update === "Offline") {
-
+        function updateUIStatus(activityName, available) {
+            statusDiv = document.getElementById("worker_status").innerText = activityName;
+            if (available === true) {
+                statusDiv = document.getElementById("worker_status").style.color = "#00BB00";
+            } else {
+                statusDiv = document.getElementById("worker_status").style.color = "#BB0000";
+            }
+            if (activityName === "Offline") {
                 document.getElementById("btn_online").style.display = "inline";
                 document.getElementById("btn_offline").style.display = "none";
                 document.getElementById("btn_hangup").style.display = "none";
@@ -245,14 +255,20 @@
                 // Manager escalation, issue call instuction
                 console.log("manager task");
                 console.log(ReservationObject);
-                console.log(window.location.protocol+"//"+window.location.hostname );
+
+                console.log(window.location.protocol + "//" + window.location.host + "/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid)
                     ReservationObject.call(
-                    "{{ caller_id }}",
-                        window.location.protocol+"//"+window.location.hostname + "/transferTwiml?conference=" +ReservationObject.task.attributes.customer_taskSid,
-                    "https://requestb.in/1128c331", // Replace with your own url for conferenceEvents
+                    // callFrom
+                    "{{ caller_id }}",  // CC's phone number
+                    // callUrl - URI that is executed on the answering Worker's leg
+                    window.location.protocol + "//" + window.location.host + "/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid,
+                    // callStatusCallbackUrl (optional) - status callback url
+                    window.location.protocol + "//" + window.location.host + "/conference_callback",
+                    // callAccept (optional) - accept the task before initiating call
                     "false",
-
-
+                    // callRecord (optional) - record-from-answer or false - false since we're already recoding the main conference
+                    "false",
+                    // resultCallback (optional) - a JavaScript Function that will be called upon the completion of the dial
                     function (error, reservation) {
                         if (error) {
                             console.log(error.code);
@@ -262,32 +278,37 @@
                         console.log("reservation called the escalation contact");
                     }
                 );
+
                  ReservationObject.accept(); // Call instruction requires you to manually accept the Reservation prior to issuing the instruction
                 
                  document.getElementById("btn_hangupManager").style.display = "inline";
                  document.getElementById("btn_escalate").style.direction = "none";
+
                 unmuteCaller(ReservationObject.task.attributes.customer, ReservationObject.task.attributes.conference);
             }
             else {
-
-                // not a transfer issue conference instruction
+                
+                // not a transfer, simply create a new conference and join customer and worker into it
                 var options = {
-                    "From": "{{ caller_id }}",
+                    "From": "{{ caller_id }}",  // CC's phone number
                     "PostWorkActivitySid": "{{ activity['WrapUp'] }}",
                     "Timeout": "30",
                     "Record": "true",
-                    "RecordingCallbackUrl": "https://requestb.in/1128c331", //replace with your own url
-                    "ConferenceStatusCallback": window.location.host+"/conference_callback",
+                    "RecordingStatusCallback": window.location.protocol + "//" + window.location.host + "/recording_callback",
+                    "ConferenceStatusCallback": window.location.protocol + "//" + window.location.host + "/conference_callback",
                     "ConferenceStatusCallbackEvent": "start,end,join,leave"
                 };
+                console.log("Starting conference...");
+                console.log(options);
 
-                ReservationObject.conference(null, null, null, null, null, options,
+                ReservationObject.conference(null, null, null, null,
                     function (error, reservation) {
                         if (error) {
                             console.log(error.code);
                             console.log(error.message);
                         }
-                    }
+                    },
+                    options
                 );
 
                 logger("Conference initiated!");
@@ -302,12 +323,10 @@
             document.getElementById("btn_unmute").style.display = "inline";
             document.getElementById("btn_escalate").style.display = "inline";
 
-            updateUIStatus("On a call");
-
+            updateUIStatus("On a call", false);
         }
 
         function rejectReservation() {
-
             ReservationObject.reject();
             document.getElementById("btn_reject").style.display = "none";
             document.getElementById("btn_accept").style.display = "none";
@@ -322,11 +341,11 @@
             $.post("/callTransfer", {
                 participant: ReservationObject.task.attributes.conference.participants.customer, //customer callSid
                 conference: ReservationObject.task.attributes.conference.sid, //conference
-                customer: ReservationObject.task.attributes.conference.participants.customer, //customer callsid - consider removing
-                taskSid: ReservationObject.task.sid //tasksid for the call transfer
+                //todo: remove// customer: ReservationObject.task.attributes.conference.participants.customer, //customer callsid - consider removing
+                taskSid: ReservationObject.task.sid, //tasksid for the call transfer
+                selected_language: (ReservationObject.task.attributes.selected_language ? ReservationObject.task.attributes.selected_language : ''),
+                from: (ReservationObject.task.attributes.from ? ReservationObject.task.attributes.from : '')
             });
-
-
         }
 
         function muteCaller() {
@@ -335,8 +354,6 @@
                 conference: ReservationObject.task.attributes.conference.sid,
                 muted: "True"
             });
-
-
         }
 
         function unmuteCaller(customer) {
@@ -356,8 +373,6 @@
                     muted: "False"
                 });
             }
-
-
         }
 
         function logger(message) {
@@ -365,7 +380,6 @@
             log.value += "\n> " + message;
             log.scrollTop = log.scrollHeight;
         }
-
 
         window.onload = function () {
             // Initialize TaskRouter.js on page load using window.workerToken -
