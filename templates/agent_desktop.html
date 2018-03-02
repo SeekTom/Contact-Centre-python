@@ -88,21 +88,6 @@
             });
         }
 
-          function hangupManager() {
-            ReservationObject.task.complete(); //complete the call instruction task
-            //set the manager to wrap up
-             worker.update("ActivitySid", "{{ activity['WrapUp'] }}", function (error, worker) {
-                if (error) {
-                    console.log(error.code);
-                    console.log(error.message);
-                } else {
-                    console.log(worker.activityName);
-                }
-            });
-            Twilio.Device.disconnectAll();
-        }
-
-
     </script>
 
     <script type="text/javascript">
@@ -199,7 +184,6 @@
                 'accept'   : false,
                 'reject'   : false,
                 'hangup'   : false,
-                'hangupManager' : false,
             }
             
             switch(activityName) {
@@ -219,11 +203,7 @@
                     }
                     buttons['mute'] = true;
                     buttons['unmute'] = true;
-                    if(isManager) {
-                        buttons['hangupManager'] = true;                       
-                    } else {
-                        buttons['hangup'] = true;
-                    }
+                    buttons['hangup'] = true;
                     break;
                 case "WrapUp":
                     buttons['offline'] = true;
@@ -382,7 +362,6 @@
         <button id="btn_mute" style="display:none;" class="btn" onclick="muteCaller()">Mute</button>
         <button id="btn_unmute" style="display:none;" class="btn" onclick="unmuteCaller()">Unmute</button>
         <button id="btn_hangup" style="display:none;" class="btn" onclick="hangup();">Hangup</button>
-        <button id="btn_hangupManager" style="display:none;" class="btn" onclick="hangupManager();">Hangup</button>
         <button id="btn_online" style="display:none;" class="btn" onclick="goAvailable()">Go Available</button>
         <button id="btn_offline" style="display:none;" class="btn" onclick="goOffline()">Go Offline</button>
     </section>
