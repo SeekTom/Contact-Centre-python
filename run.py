@@ -231,7 +231,8 @@ def conference_callback():
             call = client.calls(request.values.get("CallSid")).fetch()
             caller = call.from_
 
-            if cb_event == "participant-leave":
+            # send a survey message after the call, but make sure to exclude escallations
+            if cb_event == "participant-leave" and caller != caller_id:
                 if conf_moderator == "true":
                     message = client.messages.create(
                         to=caller,
@@ -239,14 +240,15 @@ def conference_callback():
                         body="Thanks for calling OwlCorp, how satisfied were you with your designated agent on a scale of 1 to 10?")
                 else:
                     print("Something else happened: " + cb_event)
+        return '', 204
     
     return render_template('status.html')
 
 @app.route("/recording_callback", methods=['GET', 'POST'])
 def recording_callback():
     if request.values.get('RecordingUrl'):
-        print('recording url: ' + request.values.get('RecordingUrl'))
-        return # todo: process recording callbacks
+        print('received recording url: ' + request.values.get('RecordingUrl'))
+        return '', 204
 
 
 @app.route("/callTransfer", methods=['GET', 'POST'])

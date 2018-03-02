@@ -250,18 +250,18 @@
                 // Manager escalation, issue call instuction
                 console.log("manager task");
                 console.log(ReservationObject);
-                console.log("/" + window.location.host + "/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid)
+                console.log(window.location.protocol + "//" + window.location.host + "/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid)
                     ReservationObject.call(
                     // callFrom
                     "{{ caller_id }}",  // CC's phone number
                     // callUrl - URI that is executed on the answering Worker's leg
-                    "/" + window.location.host + "/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid,
+                    window.location.protocol + "//" + window.location.host + "/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid,
                     // callStatusCallbackUrl (optional) - status callback url
-                    "/" + window.location.host + "/conference_callback",
+                    window.location.protocol + "//" + window.location.host + "/conference_callback",
                     // callAccept (optional) - accept the task before initiating call
                     "false",
-                    // callRecord (optional) - record-from-answer or false
-                    "record-from-answer",
+                    // callRecord (optional) - record-from-answer or false - false since we're already recoding the main conference
+                    "false",
                     // resultCallback (optional) - a JavaScript Function that will be called upon the completion of the dial
                     function (error, reservation) {
                         if (error) {
@@ -285,19 +285,22 @@
                     "From": "{{ caller_id }}",  // CC's phone number
                     "PostWorkActivitySid": "{{ activity['WrapUp'] }}",
                     "Timeout": "30",
-                    "ConferenceRecord": "true",
-                    "ConferenceRecordingStatusCallback": "/" + window.location.host + "/recording_callback",
-                    "ConferenceStatusCallback": "/" + window.location.host + "/conference_callback",
+                    "Record": "true",
+                    "RecordingStatusCallback": window.location.protocol + "//" + window.location.host + "/recording_callback",
+                    "ConferenceStatusCallback": window.location.protocol + "//" + window.location.host + "/conference_callback",
                     "ConferenceStatusCallbackEvent": "start,end,join,leave"
                 };
+                console.log("Starting conference...");
+                console.log(options);
 
-                ReservationObject.conference(null, null, null, null, null, options,
+                ReservationObject.conference(null, null, null, null,
                     function (error, reservation) {
                         if (error) {
                             console.log(error.code);
                             console.log(error.message);
                         }
-                    }
+                    },
+                    options
                 );
 
                 logger("Conference initiated!");
