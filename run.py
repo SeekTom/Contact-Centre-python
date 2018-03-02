@@ -224,46 +224,55 @@ def noClientView():
 # Callbacks
 
 @app.route("/conference_callback", methods=['GET', 'POST'])
-def handle_callback():
+def conference_callback():
     #monitor for when the customer leaves a conference and output something to the console
     if 'StatusCallbackEvent' in request.values:
-
         cb_event = request.values.get('StatusCallbackEvent')
+        print('event:' + cb_event)
         conf_moderator = request.values.get('StartConferenceOnEnter')
-        call = client.calls(request.values.get("CallSid")).fetch()
-        caller = call.from_
 
-        if cb_event == "participant-leave":
-            if conf_moderator == "true":
-                message = client.messages.create(
-                    to=caller,
-                    from_=caller_id,
-                    body="Thanks for calling OwlCorp, how satisfied were you with your designated agent on a scale of 1 to 10?")
-            else:
-                print("Something else happened: " + cb_event)
+        if request.values.get("CallSid"):
+            call = client.calls(request.values.get("CallSid")).fetch()
+            caller = call.from_
+
+            if cb_event == "participant-leave":
+                if conf_moderator == "true":
+                    message = client.messages.create(
+                        to=caller,
+                        from_=caller_id,
+                        body="Thanks for calling OwlCorp, how satisfied were you with your designated agent on a scale of 1 to 10?")
+                else:
+                    print("Something else happened: " + cb_event)
+    
     return render_template('status.html')
 
-
+@app.route("/recording_callback", methods=['GET', 'POST'])
+def recording_callback():
+    if request.values.get('RecordingUrl'):
+        print('recording url: ' + request.values.get('RecordingUrl'))
+        return # todo: process recording callbacks
 
 
 @app.route("/callTransfer", methods=['GET', 'POST'])
 def transferCall():
     # transfer call
     # put the customer call on hold
-
     participant = client \
         .conferences(request.values.get('conference')) \
         .participants(request.values.get('participant')) \
         .update(hold=True)
-    # create new task for the manager escalation
-    # manager workflow is set manually for now, scope for making that a variable based on who the worker is selecting to escalate to in the next version
-    # add new attributes on the task for customer callsid, customer tasksid and conference
 
+    # create new task for the manager escalation
+    # todo: manager workflow is set manually for now, scope for making that a variable based on who the worker is selecting to escalate to in the next version
+    # add new attributes on the task for customer callsid, customer tasksid and conference
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid=workflow_mngr,
-                attributes='{"selected_product":"manager", "conference":"' + request.values.get(
-                    'conference') + '", "customer":"' + request.values.get(
-                    "customer") + '", "customer_taskSid":"' + request.values.get('taskSid') + '"}')
+        .create(workflow_sid=workflow_mngr, task_channel="voice",
+                attributes='{"selected_product":"manager' +
+                    '", "selected_language":"' + request.values.get('selected_language') + 
+                    '", "conference":"' + request.values.get('conference') +
+                    '", "customer":"' + request.values.get('participant') + 
+                    '", "customer_taskSid":"' + request.values.get('taskSid') + 
+                    '", "from":"' + request.values.get('from') + '"}')
 
     resp = VoiceResponse
     return Response(str(resp), mimetype='text/xml')
@@ -285,7 +294,7 @@ def unmuteCall():
 
 @app.route("/transferTwiml", methods=['GET', 'POST'])
 def transferToManager():
-    #create TwiML that dials the customer conference add the manager in as a participant
+    # create TwiML that dials manager to customer conference as a participant
 
     response = VoiceResponse()
     dial = Dial()
