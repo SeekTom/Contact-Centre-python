@@ -263,6 +263,14 @@ if(args.action == 'init'):
                             'expression': 'selected_product == "manager"',
                             'targets': [{'queue': taskqueue_sid['Managers']}]
                         },
+                        {
+                            'filter_friendly_name': 'Manager',
+                            'expression': 'selected_product == "manager" AND escalation_type =="chat"',
+                            'targets': [{'queue': taskqueue_sid['Managers'],
+                                         'expression': 'worker.skills HAS "manager" and worker.channel.chat.configured_capacity > 0'
+                                         }],
+
+                        }
                     ],
                 }
             }
