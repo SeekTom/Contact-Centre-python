@@ -74,6 +74,7 @@
 
         function hangup() {
             Twilio.Device.disconnectAll();
+
             ReservationObject.task.complete();
 
             worker.update("ActivitySid", "{{ activity['WrapUp'] }}", function (error, worker) {
@@ -161,8 +162,15 @@
                 logger("-----");
                 logger("You have been reserved to handle a call!");
                 logger("Call from: " + reservation.task.attributes.from);
+
                 logger("Selected language: " + reservation.task.attributes.selected_language);
                 logger("Customer request: " + reservation.task.attributes.selected_product);
+                if (reservation.task.attributes.selected_product !== "manager"){
+                  logger("Selected language: " + reservation.task.attributes.selected_language);
+
+                  }
+                logger("Customer Request: " + reservation.task.attributes.selected_product);
+            
                 logger("-----");
                 logger(reservation.sid);
                 ReservationObject = reservation;
@@ -247,6 +255,7 @@
                 // Manager escalation, issue call instuction
                 console.log("manager task");
                 console.log(ReservationObject);
+
                 console.log(window.location.protocol + "//" + window.location.host + "/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid)
                     ReservationObject.call(
                     // callFrom
@@ -269,10 +278,12 @@
                         console.log("reservation called the escalation contact");
                     }
                 );
-                ReservationObject.accept(); // Call instruction requires you to manually accept the Reservation prior to issuing the instruction
 
-                document.getElementById("btn_hangupManager").style.display = "inline";
-                document.getElementById("btn_escalate").style.direction = "none";
+                 ReservationObject.accept(); // Call instruction requires you to manually accept the Reservation prior to issuing the instruction
+                
+                 document.getElementById("btn_hangupManager").style.display = "inline";
+                 document.getElementById("btn_escalate").style.direction = "none";
+
                 unmuteCaller(ReservationObject.task.attributes.customer, ReservationObject.task.attributes.conference);
             }
             else {

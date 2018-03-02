@@ -42,7 +42,8 @@ for a in activities:
 
 def return_work_space(digits):
 
-    # query user input and assign the correct workflow
+
+    #query user input and assign the correct workflow
 
     digit_pressed = digits
     if digit_pressed == "1":
@@ -194,7 +195,7 @@ def generate_view(charset='utf-8'):
     # render client/worker tokens to the agent desktop so that they can be queried on the client side
     return render_template('agent_desktop.html', token=client_token.decode("utf-8"),
                            worker_token=worker_token.decode("utf-8"),
-                           client_name=worker_sid, activity=activity,
+                           client_=worker_sid, activity=activity,
                            caller_id=caller_id)
 
 
@@ -223,7 +224,9 @@ def noClientView():
 @app.route("/conference_callback", methods=['GET', 'POST'])
 def conference_callback():
     #monitor for when the customer leaves a conference and output something to the console
-    if 'StatusCallbackEvent' in request.values:
+
+    if 'StatusCallbackEvent' in request.values and 'CallSid' in request.values:
+
         cb_event = request.values.get('StatusCallbackEvent')
         conf_moderator = request.values.get('StartConferenceOnEnter')
 

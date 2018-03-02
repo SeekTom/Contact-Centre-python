@@ -18,15 +18,11 @@ This implements:
 - Programmable Chat
 - Multitasking
 
-You will need to add in your own:
+Install the requirements by running `pip install requirements.txt`
+Run the install script to create the basic contact center structure
 
-- AccountSID,
-- AuthToken,
-- Twiml ApplicationSID,
-- WorkspaceSid
-- WorkflowSids (Sales, Support, Billing, Managers, OOO)
+Buy a Twilio number https://www.twilio.com/console/phone-numbers/incoming
+Configure your number to point towards where you have deployed this app: https://YOUR_DOMAIN_HERE/incoming_call
 
-You will need to configure the above workspaces, workflows, taskqueues and assorted workers via the TaskRouter Console
 
-Configure your number to point towards https://YOUR_DOMAIN_HERE/incoming_call
 
