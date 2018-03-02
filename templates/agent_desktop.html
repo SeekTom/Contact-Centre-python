@@ -45,7 +45,7 @@
         Twilio.Device.setup("{{ token }}", {debug: true});
 
         Twilio.Device.ready(function (device) {
-            console.log("Client '{{ client_name }}' is ready");
+            console.log("Client is ready for connections");
         });
 
         Twilio.Device.error(function (error) {
@@ -74,7 +74,6 @@
 
         function hangup() {
             Twilio.Device.disconnectAll();
-
             ReservationObject.task.complete();
 
             worker.update("ActivitySid", "{{ activity['WrapUp'] }}", function (error, worker) {
@@ -87,12 +86,6 @@
                     console.log(worker.activityName);
                 }
             });
-
-            document.getElementById("btn_hangup").style.display = "none";
-            document.getElementById("btn_online").style.display = "none";
-            document.getElementById("btn_offline").style.display = "inline";
-            document.getElementById("btn_mute").style.display = "none";
-            document.getElementById("btn_unmute").style.display = "none";
         }
 
           function hangupManager() {
@@ -106,14 +99,7 @@
                     console.log(worker.activityName);
                 }
             });
-
             Twilio.Device.disconnectAll();
-
-            document.getElementById("btn_hangup").style.display = "none";
-            document.getElementById("btn_online").style.display = "none";
-            document.getElementById("btn_offline").style.display = "inline";
-            document.getElementById("btn_mute").style.display = "none";
-            document.getElementById("btn_unmute").style.display = "none";
         }
 
 
@@ -121,62 +107,44 @@
 
     <script type="text/javascript">
         //TaskRouter JS code
-        var ReservationObject;
+        let ReservationObject;
+        let isManager = false;  // workaround for worker's skills not being passed with a reservation
 
         function registerTaskRouterCallbacks() {
             worker.on('ready', function (worker) {
                 logger("Successfully registered as: " + worker.friendlyName);
-                document.querySelector('h2').innerHTML = "ACME agent desktop: " + worker.friendlyName;
-                if(worker.attributes.hasOwnProperty('skills')) {
-                    logger("Skills: " + worker.attributes['skills']);
+                if(worker.attributes.skills && worker.attributes.skills.includes('manager')) {
+                    document.querySelector('h2').innerHTML = "ACME manager desktop: " + worker.friendlyName;
+                    isManager = true;
+                } else {
+                    document.querySelector('h2').innerHTML = "ACME agent desktop: " + worker.friendlyName;
                 }
-                if(worker.attributes.hasOwnProperty('languages')) {
-                    logger("Languages: " + worker.attributes['languages']);
+                if(worker.attributes.skills) {
+                    logger("Skills: " + worker.attributes.skills.join(', '));
+                }
+                if(worker.attributes.languages) {
+                    logger("Languages: " + worker.attributes.languages.join(', '));
                 }
                 logger("Current activity is: " + worker.activityName);
-                updateUIStatus(worker.activityName, worker.available);
+                refreshWorkerUI(worker);
             });
 
             worker.on('activity.update', function (worker) {
-
-                logger("Worker activity changed to: " + worker.activityName);
-                var workerStatus = worker.activityName;
-                updateUIStatus(worker.activityName, worker.available);
-
-                if (worker.activitySid === "{{ activity['WrapUp'] }}") {
-
-                    if (ReservationObject) {
-                        //console.log("Worker is wrapping up!");
-                        //console.log(ReservationObject);
-                      //  ReservationObject.task.complete();
-                    }
-                }
-
-                if (worker.activityName === "Offline" || worker.activityName === "WrapUp") {
-                    document.getElementById("btn_online").style.display = "inline";
-                    document.getElementById("btn_offline").style.display = "none";
-                }
+                let activityName = worker.activityName;
+                logger("Worker activity changed to: " + activityName);
+                refreshWorkerUI(worker)
             });
 
             worker.on('reservation.created', function (reservation) {
                 logger("-----");
                 logger("You have been reserved to handle a call!");
                 logger("Call from: " + reservation.task.attributes.from);
-
                 logger("Selected language: " + reservation.task.attributes.selected_language);
                 logger("Customer request: " + reservation.task.attributes.selected_product);
-                if (reservation.task.attributes.selected_product !== "manager"){
-                  logger("Selected language: " + reservation.task.attributes.selected_language);
-
-                  }
-                logger("Customer Request: " + reservation.task.attributes.selected_product);
-            
                 logger("-----");
                 logger(reservation.sid);
-                ReservationObject = reservation;
-                document.getElementById("btn_accept").style.display = "inline";
-                document.getElementById("btn_reject").style.display = "inline";
-                document.getElementById("btn_offline").style.display = "none";
+                refreshWorkerUI(worker, "Incoming Reservation")
+                ReservationObject = reservation;  // set global ReservationObject
             });
 
             worker.on('reservation.accepted', function (reservation) {
@@ -197,56 +165,82 @@
             });
         }
 
-
         function goAvailable() {
-
             // update worker's activity to Idle
             worker.update("ActivitySid", "{{ activity['Idle'] }}", function (error, worker) {
                 if (error) {
                     console.log(error.code);
                     console.log(error.message);
-                } else {
-                    console.log(worker.activityName); // "Idle"
                 }
             });
-
-            document.getElementById("btn_online").style.display = "none";
-            document.getElementById("btn_offline").style.display = "inline";
         }
 
         function goOffline() {
-
             // update worker's activity to Offline
             worker.update("ActivitySid", "{{ activity['Offline'] }}", function (error, worker) {
                 if (error) {
                     console.log(error.code);
                     console.log(error.message);
-                } else {
-                    console.log(worker.activityName); // "Offline"
                 }
             });
-
-            document.getElementById("btn_offline").style.display = "none";
-            document.getElementById("btn_mute").style.display = "none";
-            document.getElementById("btn_unmute").style.display = "none";
-            document.getElementById("btn_escalate").style.display = "none";
-
         }
 
-        function updateUIStatus(activityName, available) {
-            statusDiv = document.getElementById("worker_status").innerText = activityName;
-            if (available === true) {
-                statusDiv = document.getElementById("worker_status").style.color = "#00BB00";
-            } else {
-                statusDiv = document.getElementById("worker_status").style.color = "#BB0000";
+        // Show/hide buttons corresponding to the activity
+        function refreshWorkerUI(worker, activityOverride = null) {
+            let activityName = activityOverride || worker.activityName;
+
+            console.log("Worker activity: " + activityName);
+            let buttons = {
+                'online'   : false,
+                'offline'  : false,
+                'mute'     : false,
+                'unmute'   : false,
+                'escalate' : false,
+                'accept'   : false,
+                'reject'   : false,
+                'hangup'   : false,
+                'hangupManager' : false,
             }
-            if (activityName === "Offline") {
-                document.getElementById("btn_online").style.display = "inline";
-                document.getElementById("btn_offline").style.display = "none";
-                document.getElementById("btn_hangup").style.display = "none";
-                document.getElementById("btn_mute").style.display = "none";
-                document.getElementById("btn_unmute").style.display = "none";
-                document.getElementById("btn_escalate").style.display = "none";
+            
+            switch(activityName) {
+                case "Idle":
+                    buttons['offline'] = true;
+                    break;
+                case "Offline":
+                    buttons['online'] = true;
+                    break;
+                case "Incoming Reservation":
+                    buttons['accept'] = true;
+                    buttons['reject'] = true;
+                    break;
+                case "In a Call":
+                    if(!isManager) {
+                        buttons['escalate'] = true;
+                    }
+                    buttons['mute'] = true;
+                    buttons['unmute'] = true;
+                    if(isManager) {
+                        buttons['hangupManager'] = true;                       
+                    } else {
+                        buttons['hangup'] = true;
+                    }
+                    break;
+                case "WrapUp":
+                    buttons['offline'] = true;
+                    buttons['online'] = true;
+                    break;
+            }
+            Object.keys(buttons).forEach(function(button) {
+                //console.log(button, buttons[button]);
+                document.getElementById("btn_" + button).style.display = (buttons[button] ? "inline" : "none");
+            });
+
+            let available = worker.available;
+            document.getElementById("worker_status").innerText = activityName;
+            if (available === true) {
+                document.getElementById("worker_status").style.color = "#00BB00";
+            } else {
+                document.getElementById("worker_status").style.color = "#BB0000";
             }
         }
 
@@ -279,11 +273,7 @@
                     }
                 );
 
-                 ReservationObject.accept(); // Call instruction requires you to manually accept the Reservation prior to issuing the instruction
-                
-                 document.getElementById("btn_hangupManager").style.display = "inline";
-                 document.getElementById("btn_escalate").style.direction = "none";
-
+                ReservationObject.accept(); // Call instruction requires you to manually accept the Reservation prior to issuing the instruction
                 unmuteCaller(ReservationObject.task.attributes.customer, ReservationObject.task.attributes.conference);
             }
             else {
@@ -309,28 +299,15 @@
                         }
                     },
                     options
-                );
-
+                )
                 logger("Conference initiated!");
-                document.getElementById("btn_hangup").style.display = "inline";
             }
 
-            document.getElementById("btn_reject").style.display = "none";
-            document.getElementById("btn_accept").style.display = "none";
-            document.getElementById("btn_online").style.display = "none";
-            document.getElementById("btn_offline").style.display = "none";
-            document.getElementById("btn_mute").style.display = "inline";
-            document.getElementById("btn_unmute").style.display = "inline";
-            document.getElementById("btn_escalate").style.display = "inline";
-
-            updateUIStatus("On a call", false);
+            refreshWorkerUI(worker, "In a Call");
         }
 
         function rejectReservation() {
             ReservationObject.reject();
-            document.getElementById("btn_reject").style.display = "none";
-            document.getElementById("btn_accept").style.display = "none";
-            document.getElementById("btn_hangup").style.display = "none";
         }
 
         function transferCallBlind_Manager() {
@@ -393,7 +370,7 @@
 </head>
 <body>
 <div class="content">
-    <h2>ACME agent desktop</h2>
+    <h2>ACME desktop</h2>
 
     <section id="worker_status">
     </section>
@@ -401,14 +378,13 @@
         <br/>
         <button id="btn_accept" style="display:none;" class="btn" onclick="acceptReservation()">Accept</button>
         <button id="btn_reject" style="display:none;" class="btn" onclick="rejectReservation()">Reject</button>
-        <button id="btn_escalate" style="display:none;" class="btn" onclick="transferCallBlind_Manager()">Escalate
-        </button>
+        <button id="btn_escalate" style="display:none;" class="btn" onclick="transferCallBlind_Manager()">Escalate</button>
         <button id="btn_mute" style="display:none;" class="btn" onclick="muteCaller()">Mute</button>
         <button id="btn_unmute" style="display:none;" class="btn" onclick="unmuteCaller()">Unmute</button>
         <button id="btn_hangup" style="display:none;" class="btn" onclick="hangup();">Hangup</button>
-           <button id="btn_hangupManager" style="display:none;" class="btn" onclick="hangupManager();">Hangup</button>
+        <button id="btn_hangupManager" style="display:none;" class="btn" onclick="hangupManager();">Hangup</button>
         <button id="btn_online" style="display:none;" class="btn" onclick="goAvailable()">Go Available</button>
-        <button id="btn_offline" class="btn" onclick="goOffline()">Go Offline</button>
+        <button id="btn_offline" style="display:none;" class="btn" onclick="goOffline()">Go Offline</button>
     </section>
     <section class="log">
     </section>
