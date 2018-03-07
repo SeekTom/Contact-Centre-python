@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Customer Care - Voice Agent Screen</title>
+    <title>OwlCorp - Chat Agent Screen</title>
     <link rel="stylesheet" href="//media.twiliocdn.com/taskrouter/quickstart/agent.css"/>
     <link rel="stylesheet" href={{ url_for('static', filename='css/agent.css') }}>
 
@@ -24,6 +24,12 @@
             worker.on('ready', function (worker) {
                 agentActivityChanged(worker.activityName);
                 logger("Successfully registered as: " + worker.friendlyName);
+                if(worker.attributes.skills && worker.attributes.skills.includes('manager')) {
+                    document.querySelector('h2').innerHTML = "ACME manager desktop: " + worker.friendlyName;
+                    isManager = true;
+                } else {
+                    document.querySelector('h2').innerHTML = "ACME agent desktop: " + worker.friendlyName;
+                }
                 logger("Current activity is: " + worker.activityName);
             });
 
@@ -148,7 +154,7 @@
              function printMessage(fromUser, message) {
                 var $chatWindowBox = $('#messages');
 
-                var $user = $('<span class="username">').text(fromUser + ':');
+                var $user = $('<span class="username">').text(fromUser + ': ');
                 if (fromUser === username) {
                     $user.addClass('me');
                 }
@@ -301,6 +307,7 @@
 </head>
 <body>
 <div class="content">
+    <h2>ACME desktop</h2>
     <section class="agent-activity offline">
         <p class="activity">Offline</p>
         <button class="change-activity" data-next-activity="Idle">Go Available</button>
@@ -322,11 +329,10 @@
     </section>
     <section>
         <button id="accept" class="btn" style="display:none" onclick="acceptReservation()">Accept chat</button>
-         <button id="end" class="btn" style="display:none"  onclick="completeReservation()">End chat</button>
-          <button id="Leave" class="btn" style="display:none"  onclick="completeReservation()">Leave chat</button>
-           <button id="escalate" class="btn" style="display:none"  onclick="escalateChat()">Escalate chat</button>
-            <button id="Leave" class="btn" style="display:none"  onclick="">Leave chat</button>
-
+        <button id="end" class="btn" style="display:none"  onclick="completeReservation()">End chat</button>
+        <button id="Leave" class="btn" style="display:none"  onclick="completeReservation()">Leave chat</button>
+        <button id="escalate" class="btn" style="display:none"  onclick="escalateChat()">Escalate chat</button>
+        <button id="Leave" class="btn" style="display:none"  onclick="">Leave chat</button>
     </section>
    <br />
     <section class="log">
@@ -344,8 +350,9 @@
     <input id="chat-input" type="text" placeholder="say anything" autofocus/>
   </section>
 
-
-
+  <div style="padding-top:2em">
+    <a href="/agent_list">Back to Agent List</a>
+  </div>
 </div>
 </body>
 </html>

@@ -1,5 +1,4 @@
-
-        section input {
+section input {
   display:block;
   height:52px;
   width:800px;
@@ -10,9 +9,10 @@
   border-bottom:1px solid #2B2B2A;
   padding:0;
   font-size:42px;
-  color:#eee;
+  color:black;
 }
-        #messages {
+
+#messages {
   padding:10px;
   height:100%;
   width:800px;
@@ -21,16 +21,15 @@
   text-align:left;
 
 }
-        .me, .username.me {
-  font-weight:bold;
-  color:Black;
-}
 
-.message-container .username.me {
+.message-container .username {
+  font-weight: bold;
   display:inline-block;
   margin-right:5px;
-    color:Black;
-
+  color:Black;
+}
+.message-container .username.me {
+  color: #3498db;
 }
 
          .btn {
