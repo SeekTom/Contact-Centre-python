@@ -114,7 +114,7 @@ if(args.action == 'list'):
         print('\nWorker channels')
         print('            ' + ''.join('%-8s' % (task_channel.unique_name,) for task_channel in workspace.task_channels.list()))
         for worker in workers:
-            print('  %-10s' % worker.friendly_name) + ''.join('%-8s' % ('x' if worker_channel.available else '',) for worker_channel in worker.worker_channels.list())
+            print(('  %-10s' % worker.friendly_name) + ''.join('%-8s' % ('x' if worker_channel.available else '',) for worker_channel in worker.worker_channels.list()))
 
         print('\nActivities')
         print('  %-10s  %-34s   %s' % ('Name', 'SID', 'Available'))
