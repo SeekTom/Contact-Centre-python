@@ -17,11 +17,10 @@ account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
 auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
 
 workspace_sid = os.environ.get("TWILIO_ACME_WORKSPACE_SID") # workspace
-workflow_sid = os.environ.get("TWILIO_ACME_SUPPORT_WORKFLOW_SID")  # support workflow
+workflow_support_sid = os.environ.get("TWILIO_ACME_SUPPORT_WORKFLOW_SID")  # support workflow
 workflow_sales_sid = os.environ.get("TWILIO_ACME_SALES_WORKFLOW_SID")  # sales workflow
 workflow_billing_sid = os.environ.get("TWILIO_ACME_BILLING_WORKFLOW_SID")  # billing workflow
-workflow_OOO_sid = os.environ.get("TWILIO_ACME_OOO_SID") # out of office workflow
-workflow_mngr = os.environ.get("TWILIO_ACME_MANAGER_WORKFLOW_SID") # manager escalation workflow
+workflow_mngr_sid = os.environ.get("TWILIO_ACME_MANAGER_WORKFLOW_SID") # manager escalation workflow
 
 api_key = os.environ.get("TWILIO_ACME_CHAT_API_KEY")
 api_secret = os.environ.get("TWILIO_ACME_CHAT_SECRET")
@@ -38,11 +37,9 @@ activities = client.taskrouter.workspaces(workspace_sid).activities.list()
 for a in activities:
     activity[a.friendly_name] = a.sid
 
-# private functions
+# Private functions
 
 def return_work_space(digits):
-
-
     #query user input and assign the correct workflow
 
     digit_pressed = digits
@@ -55,7 +52,7 @@ def return_work_space(digits):
 
     if digit_pressed == "2":
         department = "support"
-        work_flow_sid = workflow_sid
+        work_flow_sid = workflow_support_sid
         workflowdata = (work_flow_sid, department) # tuple
 
         return workflowdata
@@ -68,15 +65,15 @@ def return_work_space(digits):
         return workflowdata
 
 
-# Render index
+# Main browser entry point - renders index page
 
 @app.route("/", methods=['GET', 'POST'])
 def hello_world():
     return render_template('index.html')
 
 
-# Default route for support line voice request url
-#Gather to select language
+# Main IVR entry point - answers phone number's "A Call Comes In" webhook,
+# uses <Gather> to select language
 
 @app.route("/incoming_call", methods=['GET', 'POST'])
 def incoming_call():
@@ -89,9 +86,7 @@ def incoming_call():
     return Response(str(resp), mimetype='text/xml')
 
 
-##################################################################
-
-#redirect the user to the correct department for their language choice
+# Redirect the user to the correct department for their language choice
 
 @app.route("/incoming_call/department", methods=['POST', 'GET'])
 def choose_dept():
@@ -127,6 +122,7 @@ def dept():
         g.say(say_dict.get(dept_lang)[2], language=dept_lang)
     return str(resp)
 
+
 # Enqueue calls to tasks based on language
 
 @app.route("/enqueue_call", methods=["GET", "POST"])
@@ -146,15 +142,9 @@ def enqueue_call():
     return Response(str(resp), mimetype='text/xml')
 
 
-@app.route('/incoming_call', methods=['POST', 'GET'])
-def call():
-    resp = VoiceResponse()
-    with resp.dial(callerId=caller_id) as r:
-        r.client('TomPY')
-    return str(resp)
+###################### Agent views ######################
 
-
-###########Agent views ######################
+# List of all agents (voice + chat) together with their availability
 
 @app.route("/agent_list", methods=['GET', 'POST'])
 def generate_agent_list_view():
@@ -171,9 +161,10 @@ def generate_agent_list_view():
     return render_template('agent_list.html', voice_workers=voice_workers, chat_workers=chat_workers)
 
 
+# Renders individual agent's voice desktop
+
 @app.route("/agents", methods=['GET'])
 def generate_view(charset='utf-8'):
-    # Agent desktop with Twilio Client
     worker_sid = request.args.get('WorkerSid')  # TaskRouter Worker Token
     worker_capability = WorkerCapabilityToken(
         account_sid=account_sid,
@@ -199,9 +190,10 @@ def generate_view(charset='utf-8'):
                            caller_id=caller_id)
 
 
+# Renders individual agent's voice desktop without the use of Client.JS
+
 @app.route("/agents/noclient", methods=['GET', 'POST'])
 def noClientView():
-    # Agent desktop without Twilio Client
     worker_sid = request.args.get('WorkerSid')  # TaskRouter Worker Token
     worker_capability = WorkerCapabilityToken(
         account_sid=account_sid,
@@ -268,7 +260,7 @@ def transferCall():
     
     # todo: manager workflow is set manually for now, scope for making that a variable based on who the worker is selecting to escalate to in the next version   
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid=workflow_mngr, task_channel="voice",
+        .create(workflow_sid=workflow_mngr_sid, task_channel="voice",
                 attributes='{"selected_product":"manager' +
                     '", "selected_language":"' + request.values.get('selected_language') + 
                     '", "conference":"' + request.values.get('conference') +
@@ -321,7 +313,7 @@ def createCustomerChannel():
 @app.route('/createChatTask/', methods=['POST', 'GET'])
 def createChatTask():
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid=workflow_sid, task_channel="chat",
+        .create(workflow_sid=workflow_support_sid, task_channel="chat",
                 attributes='{"selected_product":"chat", "channel":"' + request.values.get("channel") + '"}')
     task_sid = {"TaskSid": task.sid}
     return jsonify(task_sid)
@@ -348,7 +340,7 @@ def agentChat():
 def escalateChat():
 
     task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid=workflow_mngr, task_channel="chat",
+        .create(workflow_sid=workflow_mngr_sid, task_channel="chat",
                 attributes='{"selected_product":"manager", "escalation_type": "chat", "channel":"' + request.values.get("channel") + '"}')
     print("Escalation to manager created " + task.sid)
     task_sid = {"TaskSid": task.sid}
