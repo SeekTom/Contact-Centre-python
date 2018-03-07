@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Owl Agent UI</title>
+    <title>OwlCorp - Chat Agent Screen</title>
 
     <script type="text/javascript" src="//media.twiliocdn.com/sdk/js/client/v1.4/twilio.min.js"></script>
     <script type="text/javascript" src="//media.twiliocdn.com/taskrouter/js/v1.10/taskrouter.min.js"></script>
@@ -229,7 +229,7 @@
                 // Manager escalation, issue call instuction
                 console.log("manager task");
                 console.log(ReservationObject);
-
+                
                 console.log(window.location.protocol + "//" + window.location.host + "/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid)
                     ReservationObject.call(
                     // callFrom
@@ -371,6 +371,9 @@
     <section>
     <textarea id="log" readonly="true"></textarea>
     </section>
+    <div style="padding-top:0.5em">
+        <a href="/agent_list">Back to Agent List</a>
+    </div>
 </div>
 </body>
 </html>
