@@ -6,7 +6,7 @@ Languages: Python, js
 
 This implements:
 
-- Two channels (Voice & Programmable Chat)
+- Single channel (Voice)
 - 4 department, multilingual contact centre
 - Agent UI based on TaskRouter SDK for low latency
 - Twilio Client WebRTC dashboard
@@ -15,8 +15,7 @@ This implements:
 - Conference recording
 - Call holding
 - Call transfers
-- Programmable Chat
-- Multitasking
+
 
 Install the requirements by running `pip install requirements.txt`
 Run the install script to create the basic contact center structure
@@ -26,14 +25,16 @@ Run the install script to create the basic contact center structure
 2. Buy a Twilio number https://www.twilio.com/console/phone-numbers/incoming
 3. Configure your number to point towards this TwiML App (Voice: Configure With: TwiML App)
 4. Define the following env variables:
+
 ```
-TWILIO_ACME_ACCOUNT_SID - your Account SID
-TWILIO_ACME_AUTH_TOKEN - your Auth Token
+account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
+auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
+workspace_sid = os.environ.get("TWILIO_ACME_WORKSPACE_SID") # workspace
+workflow_support_sid = os.environ.get("TWILIO_ACME_SUPPORT_WORKFLOW_SID")  # support workflow
+workflow_sales_sid = os.environ.get("TWILIO_ACME_SALES_WORKFLOW_SID")  # sales workflow
+workflow_billing_sid = os.environ.get("TWILIO_ACME_BILLING_WORKFLOW_SID")  # billing workflow
+workflow_mngr_sid = os.environ.get("TWILIO_ACME_MANAGER_WORKFLOW_SID") # manager escalation workfloq
+twiml_app = os.environ.get("TWILIO_ACME_TWIML_APP_SID") # Twilio client application SID
+caller_id = os.environ.get("TWILIO_ACME_CALLERID") # Contact Center's phone number to be used in outbound communication
 
-TWILIO_ACME_TWIML_APP_SID - SID of the TwiML App created in point 1. above
-TWILIO_ACME_CALLERID - phone number bought in point 2. above (in E.164 format, e.g. '+1xxxxxxxxxx')
-
-TWILIO_ACME_WORKSPACE_SID - TaskRouter Workspace the application should use
-TWILIO_ACME_SUPPORT_WORKFLOW_SID - Support WorkFlow SID
-TWILIO_ACME_MANAGER_WORKFLOW_SID - Manager WorkFlow SID
 ```

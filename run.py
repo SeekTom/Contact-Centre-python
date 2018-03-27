@@ -5,9 +5,6 @@ from twilio.jwt.taskrouter.capabilities import WorkerCapabilityToken
 from twilio.twiml.voice_response import VoiceResponse, Conference, Enqueue, Dial
 from twilio.twiml.messaging_response import Message, MessagingResponse
 from twilio.jwt.client import ClientCapabilityToken
-from twilio.jwt.access_token import AccessToken
-from twilio.jwt.access_token.grants import (ChatGrant)
-
 import os
 
 app = Flask(__name__, static_folder='app/static')
@@ -15,17 +12,11 @@ app = Flask(__name__, static_folder='app/static')
 # Your Account Sid and Auth Token from twilio.com/user/account
 account_sid = os.environ.get("TWILIO_ACME_ACCOUNT_SID")
 auth_token = os.environ.get("TWILIO_ACME_AUTH_TOKEN")
-
 workspace_sid = os.environ.get("TWILIO_ACME_WORKSPACE_SID") # workspace
 workflow_support_sid = os.environ.get("TWILIO_ACME_SUPPORT_WORKFLOW_SID")  # support workflow
 workflow_sales_sid = os.environ.get("TWILIO_ACME_SALES_WORKFLOW_SID")  # sales workflow
 workflow_billing_sid = os.environ.get("TWILIO_ACME_BILLING_WORKFLOW_SID")  # billing workflow
-workflow_mngr_sid = os.environ.get("TWILIO_ACME_MANAGER_WORKFLOW_SID") # manager escalation workflow
-
-api_key = os.environ.get("TWILIO_ACME_CHAT_API_KEY")
-api_secret = os.environ.get("TWILIO_ACME_CHAT_SECRET")
-chat_service = os.environ.get("TWILIO_ACME_CHAT_SERVICE_SID")
-
+workflow_mngr_sid = os.environ.get("TWILIO_ACME_MANAGER_WORKFLOW_SID") # manager escalation workfloq
 twiml_app = os.environ.get("TWILIO_ACME_TWIML_APP_SID") # Twilio client application SID
 caller_id = os.environ.get("TWILIO_ACME_CALLERID") # Contact Center's phone number to be used in outbound communication
 
@@ -144,7 +135,7 @@ def enqueue_call():
 
 ###################### Agent views ######################
 
-# List of all agents (voice + chat) together with their availability
+# List of all agents (voice) together with their availability
 
 @app.route("/agent_list", methods=['GET', 'POST'])
 def generate_agent_list_view():
@@ -154,11 +145,7 @@ def generate_agent_list_view():
     voice_workers = client.taskrouter.workspaces(workspace_sid) \
         .workers.list(target_workers_expression="worker.channel.voice.configured_capacity > 0")
 
-    # get workers with enabled chat-channel
-    chat_workers = client.taskrouter.workspaces(workspace_sid) \
-        .workers.list(target_workers_expression="worker.channel.chat.configured_capacity > 0")
-
-    return render_template('agent_list.html', voice_workers=voice_workers, chat_workers=chat_workers)
+    return render_template('agent_list.html', voice_workers=voice_workers)
 
 
 # Renders individual agent's voice desktop
@@ -296,164 +283,6 @@ def transferToManager():
     response.append(dial)
 
     return Response(str(response), mimetype='text/xml')
-
-@app.route('/chat/')
-def chat():
-
-    return render_template('chat.html')
-
-@app.route('/createCustomerChannel', methods=['POST, GET'])
-def createCustomerChannel():
-
-    channel = request.values.get('taskSid')
-
-    return channel
-
-
-@app.route('/createChatTask/', methods=['POST', 'GET'])
-def createChatTask():
-    task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid=workflow_support_sid, task_channel="chat",
-                attributes='{"selected_product":"chat", "channel":"' + request.values.get("channel") + '"}')
-    task_sid = {"TaskSid": task.sid}
-    return jsonify(task_sid)
-
-
-@app.route('/agent_chat')
-def agentChat():
-    worker_sid = request.args.get('WorkerSid')  # TaskRouter Worker Token
-    worker_capability = WorkerCapabilityToken(
-        account_sid=account_sid,
-        auth_token=auth_token,
-        workspace_sid=workspace_sid,
-        worker_sid=worker_sid
-    )  # generate worker capability token
-
-    worker_capability.allow_update_activities()  # allow agent to update their activity status e.g. go offline
-    worker_capability.allow_update_reservations()  # allow agents to update reservations e.g. accept/reject
-
-    worker_token = worker_capability.to_jwt(ttl=28800)  # 8 hours
-
-    return render_template('agent_desktop_chat.html', worker_token=worker_token.decode("utf-8"))
-
-@app.route('/escalateChat/', methods=['POST'])
-def escalateChat():
-
-    task = client.taskrouter.workspaces(workspace_sid).tasks \
-        .create(workflow_sid=workflow_mngr_sid, task_channel="chat",
-                attributes='{"selected_product":"manager", "escalation_type": "chat", "channel":"' + request.values.get("channel") + '"}')
-    print("Escalation to manager created " + task.sid)
-    task_sid = {"TaskSid": task.sid}
-
-    return jsonify(task_sid)
-
-@app.route('/postChat/', methods=['GET'])
-def returnTranscript(charset='utf-8'):
-    messages = []
-    get_transcript = client.chat \
-        .services(chat_service) \
-        .channels(request.values.get("channel")) \
-        .messages \
-        .list()
-
-    for message in get_transcript:
-
-        messages.append(message.from_ + ": " + message.body)
-        print(message.from_ + ": " + message.body)
-
-    data = []
-
-    for messages in get_transcript:
-
-        item = {"message": message.from_ + ": " + message.body}
-        data.append(item)
-
-    return render_template('chat_transcript.html', chat_messages=data)
-
-
-@app.route('/postChat/', methods=['POST'])
-def getTranscript():
-    #output chat transcript to console
-    print(chat_service)
-    channel = request.values.get("channel")
-    identity = request.values.get("identity")
-    messages = []
-    # leave channel
-
-
-    response = client.chat \
-        .services(chat_service) \
-        .channels(channel) \
-        .members(identity) \
-        .delete()
-
-    #update channel to state user has left
-
-    leave_message = client.chat \
-        .services(chat_service) \
-        .channels(channel) \
-        .messages \
-        .create(identity + " has left the chat.")
-
-    get_transcript = client.chat \
-        .services(chat_service) \
-        .channels(channel) \
-        .messages \
-        .list()
-
-    for message in get_transcript:
-
-        messages.append(message.from_ + ": " + message.body)
-        print(message.from_ + ": " + message.body)
-
-    return render_template('chat_transcript.html')
-    #delete channel
-
-   # response = client.chat \
-   #     .services(chat_service) \
-    #    .channels(request.values.get("channel")) \
-   #     .delete()
-  #  return response
-# Basic health check - check environment variables have been configured
-# correctly
-@app.route('/config')
-def config():
-    return jsonify(
-        account_sid,
-        api_key,
-        api_secret,
-        chat_service,
-    )
-
-@app.route('/token', methods=['GET'])
-def randomToken():
-    username = request.values.get("identity")
-    return generateToken(username)
-
-
-@app.route('/token', methods=['POST'])
-def createToken(username):
-    # Get the request json or form data
-    content = request.get_json() or request.form
-    # get the identity from the request, or make one up
-    identity = content.get('identity', username)
-    return generateToken(identity)
-
-@app.route('/token/<identity>', methods=['POST', 'GET'])
-def token(identity):
-    return generateToken(identity)
-
-def generateToken(identity):
-
-    # Create access token with credentials
-    token = AccessToken(account_sid, api_key, api_secret, identity=identity)
-
-    if chat_service:
-        chat_grant = ChatGrant(service_sid=chat_service)
-        token.add_grant(chat_grant)
-    # Return token info as JSON
-    return jsonify(identity=identity, token=token.to_jwt().decode('utf-8'))
-
 
 if __name__ == "__main__":
     app.run(debug=True)
