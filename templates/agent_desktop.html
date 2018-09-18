@@ -4,8 +4,8 @@
     <title>OwlCorp - Chat Agent Screen</title>
 
     <script type="text/javascript" src="//media.twiliocdn.com/sdk/js/client/v1.4/twilio.min.js"></script>
-    <script type="text/javascript" src="//media.twiliocdn.com/taskrouter/js/v1.10/taskrouter.min.js"></script>
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script type="text/javascript" src="//media.twiliocdn.com/taskrouter/js/v1.13/taskrouter.min.js"></script>
+     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 
     <link type="text/css" rel="stylesheet" href="//media.twiliocdn.com/taskrouter/quickstart/agent.css"/>
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
@@ -77,12 +77,13 @@
             ReservationObject.task.complete();
 
             worker.update("ActivitySid", "{{ activity['WrapUp'] }}", function (error, worker) {
-                logger(worker.friendlyName + " has ended the call");
+                
 
                 if (error) {
                     console.log(error.code);
                     console.log(error.message);
                 } else {
+                    logger(worker.friendlyName + " has ended the call");
                     console.log(worker.activityName);
                 }
             });
